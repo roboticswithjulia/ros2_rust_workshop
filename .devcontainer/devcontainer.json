@@ -1,0 +1,17 @@
+
+{
+    "name": "ros2_rust_dev:latest",
+    "build": {
+    "context": "..",
+    "dockerfile": "../.docker/Dockerfile",
+    },
+    "workspaceFolder": "/workspace",
+    "runArgs": [
+    "--network=host",
+    "--hostname=devcontainer",
+    "--privileged"
+    ],
+    "mounts": [
+      "source=${localWorkspaceFolder},target=/workspace/docs,type=bind", // Workspace folder
+    ]
+}
