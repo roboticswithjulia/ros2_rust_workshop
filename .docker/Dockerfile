@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     ssh \
     xterm \
+    tree \
+    ament-cmake \
+
     && rm -rf /var/lib/apt/lists/*
 
 RUN sudo apt-get update
@@ -21,6 +24,7 @@ RUN sudo apt-get install -y ros-$ROS_DISTRO-rviz2
 RUN sudo apt-get install -y ros-$ROS_DISTRO-ros2-control
 RUN sudo apt-get install -y ros-$ROS_DISTRO-joint-state-broadcaster
 RUN sudo apt-get install -y ros-$ROS_DISTRO-joint-trajectory-controller
+RUN sudo apt-get install -y ros-$ROS_DISTRO-rclcpp
 
 
 # Install Rust and the cargo-ament-build plugin
@@ -33,13 +37,14 @@ RUN pip install --upgrade pytest
 # Install the colcon-cargo and colcon-ros-cargo plugins
 RUN pip install git+https://github.com/colcon/colcon-cargo.git git+https://github.com/colcon/colcon-ros-cargo.git
 
-RUN mkdir -p /workspace
-WORKDIR /workspace
+RUN mkdir -p /workspaces
+WORKDIR /workspaces
 
+# Clone the champ simulation and teleop packages
 RUN mkdir src
-RUN git clone --recursive https://github.com/roboticswithjulia/champ.git -b ros2 /workspace/src/champ
-RUN git clone https://github.com/chvmp/champ_teleop -b ros2 /workspace/src/champ_teleop
-RUN git clone https://github.com/ros2-rust/ros2_rust.git /workspace/src/ros2_rust
-RUN vcs import src < src/ros2_rust/ros2_rust_humble.repos
+RUN git clone --recursive https://github.com/roboticswithjulia/champ.git -b ros2 /workspaces/src/champ
+RUN git clone https://github.com/chvmp/champ_teleop -b ros2 /workspaces/src/champ_teleop
+RUN git clone https://github.com/ros2-rust/ros2_rust.git /workspaces/src/ros2_rust
+RUN vcs import /workspaces/src < src/ros2_rust/ros2_rust_humble.repos
 RUN . /opt/ros/humble/setup.sh && colcon build 
-RUN . /workspace/install/setup.sh
+RUN . /workspaces/install/setup.sh
