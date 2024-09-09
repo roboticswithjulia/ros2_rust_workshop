@@ -12,4 +12,4 @@ Los requerimientos del workshop son:
  &emsp; 2. Tener instalado la extensión de docker en vscode. [Instrucciones de instalación de docker en vscode](https://code.visualstudio.com/docs/containers/overview).
 
  ## ⚠️ Es importante venir al workshop con el entorno de trabajo configurado:
- 4. Dichas instrucciones se pueden encontrar en el punto 3 del fichero [ROS2 Rust workhsop](ROS2%20Rust%20workshop.ipynb).
+ 3. Dichas instrucciones se pueden encontrar en el punto 3 del fichero [ROS2 Rust workhsop](ROS2%20Rust%20workshop.ipynb).
