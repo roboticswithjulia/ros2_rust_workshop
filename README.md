@@ -9,9 +9,9 @@ Los requerimientos del workshop son:
  3. Administrar Docker como un usuario no root. [Administrar usuario docker](https://docs.docker.com/engine/install/linux-postinstall/)
 
 #### [Opción A]: Si se va a utilizar devcontainers:
- &emsp; 2. Tener instalado la extensión de devcontainers en vscode. [Instrucciones de instalación de devcontainers en vscode](https://code.visualstudio.com/docs/devcontainers/containers).
+ &emsp; 4. Tener instalado la extensión de devcontainers en vscode. [Instrucciones de instalación de devcontainers en vscode](https://code.visualstudio.com/docs/devcontainers/containers).
 #### [Opción B]: Si se va a utilizar docker [Recomendado]
- &emsp; 2. Tener instalado la extensión de docker en vscode. [Instrucciones de instalación de docker en vscode](https://code.visualstudio.com/docs/containers/overview).
+ &emsp; 4. Tener instalado la extensión de docker en vscode. [Instrucciones de instalación de docker en vscode](https://code.visualstudio.com/docs/containers/overview).
 
  ## ⚠️ Es importante venir al workshop con el entorno de trabajo configurado:
- 3. Dichas instrucciones se pueden encontrar en el punto 3 del fichero [ROS2 Rust workhsop](ROS2%20Rust%20workshop.ipynb).
+ 5. Dichas instrucciones se pueden encontrar en el punto 3 del fichero [ROS2 Rust workhsop](ROS2%20Rust%20workshop.ipynb).
