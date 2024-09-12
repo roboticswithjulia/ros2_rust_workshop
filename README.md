@@ -5,10 +5,12 @@ Las instrucciones del _workshop_ pueden encontrarse [aquí](./ROS2%20Rust%20work
 Los requerimientos del workshop son:
 
  1. Tener instalado vscode. [Instrucciones de instalación de vscode](https://code.visualstudio.com/docs/setup/linux).
+ 2. Tener instalado docker.  [Instalación de docker](https://docs.docker.com/engine/install/ubuntu/).
+ 3. Administrar Docker como un usuario no root. [Administrar usuario docker](https://docs.docker.com/engine/install/linux-postinstall/)
 
 #### [Opción A]: Si se va a utilizar devcontainers:
  &emsp; 2. Tener instalado la extensión de devcontainers en vscode. [Instrucciones de instalación de devcontainers en vscode](https://code.visualstudio.com/docs/devcontainers/containers).
-#### [Opción B]: Si se va a utilizar docker:
+#### [Opción B]: Si se va a utilizar docker [Recomendado]
  &emsp; 2. Tener instalado la extensión de docker en vscode. [Instrucciones de instalación de docker en vscode](https://code.visualstudio.com/docs/containers/overview).
 
  ## ⚠️ Es importante venir al workshop con el entorno de trabajo configurado:
