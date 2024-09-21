@@ -4,8 +4,10 @@ echo -e "Starting up turtlebot_remote container \n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 echo -e "This container will access to the users home directory and log in as the user with their password and x sever access.\nYou will not own the workspace though, use sudo chown -R $USER ~/ros2_rust_ws"
 echo -e "Source the workspace with source install/setup.sh"
 
+cuser="1000"
+
 docker run -it --privileged \
-    --user=$(id -u $USER):$(id -g $USER) \
+    --user=${cuser} \
     --group-add sudo \
     --env="DISPLAY" \
     --env="QT_X11_NO_MITSHM=1" \
@@ -19,5 +21,3 @@ docker run -it --privileged \
     --net=host \
     --cap-add=sys_nice \
     ros2_rust_dev:latest
-    # --cpus=".9"  \
-    # --memory="15G" \

@@ -20,6 +20,10 @@
     },
     "mounts": [
       "source=${localWorkspaceFolder},target=/ros2_rust_ws/src/rust_ws_docs,type=bind"
-    ]
-
+    ],
+    "remoteUser": "cuser",
+    "containerEnv": {
+      // Convenience, for shell colors, aliases, etc
+      "SHELL": "/bin/bash"
+      }
 }
