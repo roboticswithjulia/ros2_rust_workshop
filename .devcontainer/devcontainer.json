@@ -3,12 +3,11 @@
     "name": "ros2_rust_roscon_spain:latest",
     "build": {
     "context": "..",
-    "dockerfile": "../.docker/Dockerfile",
+    "dockerfile": "../docker/Dockerfile",
     "args": {
       "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}"
     }
     },
-    "workspaceFolder": "/ros2_rust_ws",
     "runArgs": [
     "--network=host",
     "--privileged"
@@ -17,9 +16,7 @@
       "DISPLAY": "${localEnv:DISPLAY}",
       "TERM": "xterm-256color"
     },
-    "mounts": [
-      "source=${localWorkspaceFolder},target=/ros2_rust_ws/src/rust_ws_docs,type=bind"
-    ],
+
     "remoteUser": "cuser",
     "containerEnv": {
       // Convenience, for shell colors, aliases, etc

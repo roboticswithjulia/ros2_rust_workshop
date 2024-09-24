@@ -31,20 +31,22 @@ RUN apt-get update && apt-get install -y \
     ament-cmake \
     && rm -rf /var/lib/apt/lists/*
 
-RUN sudo apt-get update
-RUN sudo apt-get install -y ros-$ROS_DISTRO-gazebo-ros2-control
-RUN sudo apt-get install -y ros-$ROS_DISTRO-xacro
-RUN sudo apt-get install -y ros-$ROS_DISTRO-robot-localization
-RUN sudo apt-get install -y ros-$ROS_DISTRO-rviz2
-RUN sudo apt-get install -y ros-$ROS_DISTRO-ros2-control
-RUN sudo apt-get install -y ros-$ROS_DISTRO-joint-state-broadcaster
-RUN sudo apt-get install -y ros-$ROS_DISTRO-joint-trajectory-controller
-RUN sudo apt-get install -y ros-$ROS_DISTRO-rclcpp
-RUN sudo apt-get install -y ros-$ROS_DISTRO-nav2-bringup
+RUN apt-get update && \
+    apt-get install -y ros-$ROS_DISTRO-gazebo-ros2-control \
+    ros-$ROS_DISTRO-xacro \
+    ros-$ROS_DISTRO-robot-localization \
+    ros-$ROS_DISTRO-rviz2 \
+    ros-$ROS_DISTRO-ros2-control \
+    ros-$ROS_DISTRO-joint-state-broadcaster \
+    ros-$ROS_DISTRO-joint-trajectory-controller \
+    ros-$ROS_DISTRO-rclcpp \
+    ros-$ROS_DISTRO-nav2-bringup \
+    && rm -rf /var/lib/apt/lists/*
 
 
 # Install Rust and the cargo-ament-build plugin
 USER $CONTAINER_USER
+WORKDIR /home/${CONTAINER_USER}
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain 1.74.0 -y
 ENV PATH="/home/${CONTAINER_USER}/.cargo/bin:$PATH"
 RUN cargo install cargo-ament-build
