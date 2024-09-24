@@ -8,7 +8,7 @@ Click on 'Open in DevContainer' in the popup. Check what is going on in the back
 
 If you missed the popup, you can go to `View` > `Command Palette` > `Dev Containers: ReOpen in Container`.
 
-Note: It will download a lot of things, it may take a while in a slow connection.
+Note: It will download a lot of things, it may take a while in a slow connection. It took about 3min in my moderate machine with 100mb internet connection.
 
 
 You will be dropped in a terminal, or you can open another one pressing '+'. The terminal will be inside of docker, and you'll see you are user `cuser@your-machine`.
@@ -20,6 +20,8 @@ Next time you open the project, you can just click on 'Open in DevContainer' and
 
 # Install dependencies
 ```bash
+# Reminder: You'll see all this cloned in your host, you won't need to do it again
+# if you exit/remove this container
 cd /workspaces/ros2_rust_workshop/ros_ws/src
 git clone https://github.com/roboticswithjulia/ros2_rust_workshop
 git clone https://github.com/ros2-rust/ros2_rust.git
@@ -29,7 +31,7 @@ git clone --recursive https://github.com/roboticswithjulia/champ.git -b ros2
 
 # Build
 
-Build the workspace, about 3min.
+Build the workspace, about 3min30s in my moderate machine.
 
 ```bash
 cd /workspaces/ros2_rust_workshop/ros_ws/
