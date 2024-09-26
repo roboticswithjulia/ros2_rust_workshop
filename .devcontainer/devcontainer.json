@@ -8,6 +8,7 @@
       "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}"
     }
     },
+    "workspaceFolder": "/home/cuser/ros2_rust_workshop",
     "runArgs": [
     "--network=host",
     "--privileged"
@@ -22,4 +23,5 @@
       // Convenience, for shell colors, aliases, etc
       "SHELL": "/bin/bash"
       }
+      
 }
