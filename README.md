@@ -11,8 +11,6 @@ Los requerimientos del workshop son:
 
 Hay la posibilidad de trabajar con vscode o con docker:
 
-[Opción A]: Trabajar con devcontainers: Las instrucciones se pueden encontrar [aquí](./ROS2%20Rust%20workshop%20devcontainer.md)
-[Opción B]: Trabajar con docker: Las instrucciones se pueden encontrar [aquí](./ROS2%20Rust%20workshop%20docker.md)
+`[Opción A]`: Trabajar con devcontainers: Las instrucciones se pueden encontrar [aquí](./ROS2%20Rust%20workshop%20devcontainer.md)
 
- ## ⚠️ Es importante venir al workshop con el entorno de trabajo configurado:
- 1. Dichas instrucciones se pueden encontrar en el punto 3 del fichero [ROS2 Rust workhsop](ROS2%20Rust%20workshop.ipynb).
+`[Opción B]`: Trabajar con docker: Las instrucciones se pueden encontrar [aquí](./ROS2%20Rust%20workshop%20docker.md)
