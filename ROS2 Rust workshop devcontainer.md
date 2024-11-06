@@ -38,3 +38,5 @@ colcon build
 source install/setup.bash
 ros2 launch champ_config gazebo.launch.py
 ```
+
+> **_NOTE:_**  If you are using **Ubuntu 24.04** you may have issues opening the gazebo. To solve this, type `gazebo` in a terminal. If gazebo opens as expected, try to run again the simulation.
