@@ -39,4 +39,18 @@ source install/setup.bash
 ros2 launch champ_config gazebo.launch.py
 ```
 
-> **_NOTE:_**  If you are using **Ubuntu 24.04** you may have issues opening the gazebo. To solve this, type `gazebo` in a terminal. If gazebo opens as expected, try to run again the simulation.
+# Troubleshooting
+
+> **_NOTE:_**  If you are using **Ubuntu 24.04** you might encounter issues when opening Gazebo. To resolve this, execute the following command in the terminal:
+
+```bash
+export DISPLAY=:1
+```
+(Ensure that the value matches the output of `echo ${DISPLAY}` when executed locally).
+After setting the display variable, launch Gazebo by typing:
+
+```bash
+gazebo
+```
+
+If Gazebo opens as expected, proceed to close it first and then rerun the simulation.
