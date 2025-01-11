@@ -41,6 +41,15 @@ RUN apt-get update && \
     ros-$ROS_DISTRO-joint-trajectory-controller \
     ros-$ROS_DISTRO-rclcpp \
     ros-$ROS_DISTRO-nav2-bringup \
+    ros-$ROS_DISTRO-teleop-twist-keyboard \
+    ros-$ROS_DISTRO-gazebo-ros2-control \
+    ros-$ROS_DISTRO-xacro \
+    ros-$ROS_DISTRO-robot-localization \
+    ros-$ROS_DISTRO-ros2-controllers \
+    ros-$ROS_DISTRO-ros2-control \
+    ros-$ROS_DISTRO-velodyne \
+    ros-$ROS_DISTRO-velodyne-gazebo-plugins \
+    ros-$ROS_DISTRO-velodyne-description \
     && rm -rf /var/lib/apt/lists/*
 
 
@@ -58,4 +67,4 @@ RUN pip install git+https://github.com/colcon/colcon-cargo.git git+https://githu
 WORKDIR /home/${CONTAINER_USER}/ros2_rust_workshop/ros_ws/src
 RUN git clone https://github.com/roboticswithjulia/ros2_rust_workshop && git clone https://github.com/ros2-rust/ros2_rust.git && \
     vcs import ~/ros2_rust_workshop/ros_ws/src < ros2_rust/ros2_rust_humble.repos && \
-    git clone --recursive https://github.com/roboticswithjulia/champ.git -b ros2
+    git clone --recursive https://github.com/anujjain-dev/unitree-go2-ros2.git -b humble
