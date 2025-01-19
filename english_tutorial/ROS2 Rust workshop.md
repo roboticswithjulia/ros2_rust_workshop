@@ -686,99 +686,190 @@ Code editor: `rust_apps/src/obstacle_avoidance.rs`
 ``` bash
 use std::{
     env,
-    sync::{
-        Arc, Mutex,
-    },
+    sync::{Arc, Mutex},
+    time::Duration,
+    f32::consts::PI,
 };
-use sensor_msgs::msg::PointCloud2 as PointCloud2;
-use geometry_msgs::msg::Twist as Twist;
+use sensor_msgs::msg::PointCloud2;
+use geometry_msgs::msg::Twist;
 use anyhow::{Error, Result};
 
+/// Constants for the obstacle avoidance parameters
+const ANGULAR_SPEED: f64 = 0.5;
+const LINEAR_SPEED: f64= 2.0;
+const MAX_DISTANCE_THRESHOLD: f32 = 1.0;
+const ANGLE_TOLERANCE: f32 = 0.1;
+
+/// Represents the main obstacle avoidance system
+/// Handles LiDAR point cloud processing and robot movement control
 struct ObstacleAvoidance {
-    _subscription:Arc<rclrs::Subscription<PointCloud2>>,
-    publication: Arc<rclrs::Publisher<Twist>>,
-    twist_msg:  Arc<Mutex<Twist>>
+    _subscription: Arc<rclrs::Subscription<PointCloud2>>,
+    publisher: Arc<rclrs::Publisher<Twist>>, 
+    twist_msg: Arc<Mutex<Twist>>,
 }
 
 impl ObstacleAvoidance {
+    /// Creates a new instance of ObstacleAvoidance
+    /// 
+    /// # Arguments
+    /// * `node` - The ROS2 node to attach the publisher and subscriber to
+    /// 
+    /// # Returns
+    /// * `Result<Self, rclrs::RclrsError>` - The created instance or an error
+    
     pub fn new(node: &rclrs::Node) -> Result<Self, rclrs::RclrsError> {
         let twist_msg = Arc::new(Mutex::new(Twist::default()));
-        let publication = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEFAULT)?;
+        let publisher = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEFAULT)?;
         let twist_msg_clone = Arc::clone(&twist_msg);
 
-        let _subscription = node.create_subscription::<sensor_msgs::msg::PointCloud2, _>(
-            "velodyne_points",
-            rclrs::QOS_PROFILE_DEFAULT,
-            move |msg: sensor_msgs::msg::PointCloud2| {
-                let mut twist_msg = twist_msg_clone.lock().unwrap();
-                let mut is_obstacle = false;
-                let point_step = msg.point_step as usize; // Bytes per point
-                let angular_speed = 2.0;
-                let linear_speed = 2.0;
-                for point in msg.data.chunks(point_step) {
+        let _subscription = Self::create_point_cloud_subscription(node, twist_msg_clone)?;
 
-                    // Extract x, y, z fields (offsets 0, 4, 8 respectively)
-                    let x = f32::from_le_bytes(point[0..4].try_into().unwrap());
-                    let y = f32::from_le_bytes(point[4..8].try_into().unwrap());
-                    //let z = f32::from_le_bytes(point[8..12].try_into().unwrap());
-            
-                    // Calculate azimuth (theta) and elevation (phi)
-                    //let azimuth = y.atan2(x); // Angle in radians
-                    let distance = (x * x + y * y).sqrt();
-
-
-                    //let elevation = (z / distance).asin();
-    
-                    let safe_distance = 0.9;
-    
-                    // Check if point is within safe distance
-                    if distance < safe_distance {
-                        println!("Obstacle detected at distance {:.2} m", distance);
-                        is_obstacle = true;
-                        break;
-                    }
-                }
-    
-                if is_obstacle {
-                    // Obstacle detected - rotate in place
-                    twist_msg.linear.x = 0.0;
-                    twist_msg.angular.z = angular_speed;
-                } else {
-                    // No obstacle - move forward
-                    twist_msg.linear.x = linear_speed;
-                    twist_msg.angular.z = 0.0;
-                }
-                
-            },
-        )?;
-    
-
-
-        Ok(Self{
+        Ok(Self {
             _subscription,
-            publication,
+            publisher,
             twist_msg,
         })
     }
 
-    pub fn publish(&self) 
-    {
-      let twist_msg = self.twist_msg.lock().unwrap();
-      let _ = self.publication.publish(&*twist_msg);
+    /// Creates the point cloud subscription with the obstacle avoidance callback
+    fn create_point_cloud_subscription(
+        node: &rclrs::Node,
+        twist_msg: Arc<Mutex<Twist>>,
+    ) -> Result<Arc<rclrs::Subscription<PointCloud2>>, rclrs::RclrsError> {
+        node.create_subscription::<PointCloud2, _>(
+            "velodyne_points",
+            rclrs::QOS_PROFILE_DEFAULT,
+            move |msg: PointCloud2| {
+                let mut twist_msg = twist_msg.lock().unwrap();
+                Self::process_point_cloud(&msg, &mut twist_msg);
+            },
+        )
+    }
+
+    /// Processes the point cloud data to detect obstacles and adjust movement
+    fn process_point_cloud(msg: &PointCloud2, twist_msg: &mut Twist) {
+        let point_step = msg.point_step as usize;
+        
+        // Reset movement commands
+        Self::reset_twist_message(twist_msg);
+
+        for point in msg.data.chunks(point_step) {
+            let (x, y) = Self::extract_coordinates(point);
+            let azimuth = y.atan2(x); // Orientation of point in XY planein radians
+
+            if Self::check_obstacle_positions(x, y, azimuth, twist_msg) {
+                break;
+            }
+        }
+    }
+
+    /// Extracts X and Y coordinates from a point in the point cloud
+    fn extract_coordinates(point: &[u8]) -> (f32, f32) {
+        let x = f32::from_le_bytes(point[0..4].try_into().unwrap());
+        let y = f32::from_le_bytes(point[4..8].try_into().unwrap());
+        (x, y)
+    }
+
+    /// Checks for obstacles in different positions and adjusts movement accordingly
+    /// Returns true if an obstacle is detected and movement is adjusted
+    fn check_obstacle_positions(x: f32, y: f32, azimuth: f32, twist_msg: &mut Twist) -> bool {
+
+        // Check left side
+        if Self::is_obstacle_at_left(y, azimuth) {
+            println!("Obstacle detected at LEFT: orientation {:.2} [rad], distance {:.2} [m], turning RIGHT", azimuth, y);
+            twist_msg.linear.x = 0.0;
+            twist_msg.linear.y = 0.0;
+            twist_msg.angular.z = -ANGULAR_SPEED;
+            return true;
+        }
+
+        // Check right side
+        if Self::is_obstacle_at_right(y, azimuth) {
+            println!("Obstacle detected at RIGHT: orientation {:.2} [rad], distance {:.2} [m], turning LEFT", azimuth, y);
+            twist_msg.linear.x = 0.0;
+            twist_msg.linear.y = 0.0;
+            twist_msg.angular.z = ANGULAR_SPEED;
+            return true;
+        }
+
+        // Check front
+        if Self::is_obstacle_at_front(x, azimuth) {
+            println!("Obstacle detected at FRONT: orientation {:.2} [rad], distance {:.2} [m], going FORWARD", azimuth, x);
+            twist_msg.linear.x = -LINEAR_SPEED;
+            twist_msg.linear.y = 0.0;
+            twist_msg.angular.z = ANGULAR_SPEED;
+            return true;
+        }
+
+        // Check back
+        if Self::is_obstacle_at_back(x, azimuth) {
+            println!("Obstacle detected at BACK: orientation {:.2} [rad], distance {:.2} [m], going BACKWARD", azimuth, x);
+            twist_msg.linear.x = LINEAR_SPEED;
+            twist_msg.linear.y = 0.0;
+            twist_msg.angular.z = ANGULAR_SPEED;
+            return true;
+        }
+
+        false
+    }
+
+    /// Checks if an obstacle is detected on the left side
+    fn is_obstacle_at_left(y: f32, azimuth: f32) -> bool {
+        y.abs() < MAX_DISTANCE_THRESHOLD && 
+        (azimuth < PI/2.0 + ANGLE_TOLERANCE) && 
+        (azimuth > PI/2.0 - ANGLE_TOLERANCE)
+    }
+
+    /// Checks if an obstacle is detected on the right side
+    fn is_obstacle_at_right(y: f32, azimuth: f32) -> bool {
+        y.abs() < MAX_DISTANCE_THRESHOLD && 
+        (azimuth < -PI/2.0 + ANGLE_TOLERANCE) && 
+        (azimuth > -PI/2.0 - ANGLE_TOLERANCE)
+    }
+
+    /// Checks if an obstacle is detected in front
+    fn is_obstacle_at_front(x: f32, azimuth: f32) -> bool {
+        x.abs() < MAX_DISTANCE_THRESHOLD && 
+        azimuth.abs() < ANGLE_TOLERANCE
+    }
+
+    /// Checks if an obstacle is detected at the back
+    fn is_obstacle_at_back(x: f32, azimuth: f32) -> bool {
+        x.abs() < MAX_DISTANCE_THRESHOLD && 
+        azimuth.abs() < (PI + ANGLE_TOLERANCE) && 
+        (azimuth.abs() > PI - ANGLE_TOLERANCE)
+    }
+
+    /// Resets the twist message to default movement values
+    fn reset_twist_message(twist_msg: &mut Twist) {
+        twist_msg.linear.x = LINEAR_SPEED;
+        twist_msg.linear.y = 0.0;
+        twist_msg.angular.z = 0.0;
+    }
+
+    /// Publishes the current twist message
+    pub fn publish(&self) {
+        let twist_msg = self.twist_msg.lock().unwrap();
+        let _ = self.publisher.publish(&*twist_msg);
     }
 }
 
 fn main() -> Result<(), Error> {
+    // Initialize ROS2 context and create node
     let context = rclrs::Context::new(env::args())?;
-    let node = rclrs::create_node(&context, "minimal_subscriber_one")?;
-    let subscriber_node_one = ObstacleAvoidance::new(&node)?;
-    while context.ok() {
-        subscriber_node_one.publish();
-        let _ = rclrs::spin_once(node.clone(), Some(std::time::Duration::from_millis(500)));
-        std::thread::sleep(std::time::Duration::from_millis(500));
-    }
-    Ok(())
+    let node = rclrs::create_node(&context, "obstacle_avoidance_node")?;
+    
+    // Create obstacle avoidance system
+    let obstacle_avoidance = ObstacleAvoidance::new(&node)?;
 
+    // Main loop
+    while context.ok() {
+        obstacle_avoidance.publish();
+        let _ = rclrs::spin_once(node.clone(), Some(Duration::from_millis(10)));
+        std::thread::sleep(Duration::from_millis(500));
+    }
+
+    Ok(())
 }
 ```
 2. Add the new executable in `Cargo.toml`
