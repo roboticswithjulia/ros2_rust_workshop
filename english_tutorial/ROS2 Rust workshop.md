@@ -448,65 +448,57 @@ $ mv main.rs scan_subscriber.rs
 3. Open in code editor `rust_apps/src/scan_subscriber.rs`
 
 ```bash
-use std::env;
+use std::{
+    env,
+    f32::consts::PI,
+};
 use anyhow::{Error, Result};
-
 use sensor_msgs::msg::PointCloud2;
 use std::convert::TryInto;
 
+const MAX_DISTANCE_THRESHOLD: f32 = 1.0;
+const ANGLE_TOLERANCE: f32 = 0.1;
+
 fn main() -> Result<(), Error> {
     let context = rclrs::Context::new(env::args())?;
-
     let node = rclrs::create_node(&context, "scan_subscriber")?;
-
-    let mut _num_messages: usize = 0;
-
-    let _subscription = node.create_subscription::<sensor_msgs::msg::PointCloud2, _>(
+    let _subscription = node.create_subscription::<PointCloud2, _>(
         "velodyne_points",
         rclrs::QOS_PROFILE_DEFAULT,
-        move |msg: sensor_msgs::msg::PointCloud2| {
-            let orientations = extract_orientation_from_pointcloud(&msg);
+        move |msg: PointCloud2| {
+            let point_step = msg.point_step as usize; // Bytes per point
+            for point in msg.data.chunks(point_step) {
 
-            for (i, (azimuth, elevation)) in orientations.iter().enumerate() {
-                println!(
-                    "Point {}: Azimuth = {:.3} rad, Elevation = {:.3} rad",
-                    i + 1,
-                    azimuth,
-                    elevation
-                );
-            }
+                // Extract x, y fields (offsets 0, 4 respectively)
+                let x = f32::from_le_bytes(point[0..4].try_into().unwrap());
+                let y = f32::from_le_bytes(point[4..8].try_into().unwrap());
             
+                // Calculate azimuth (theta) 
+                let azimuth = y.atan2(x); // Angle in radians
+
+                // Check if point is within safe distance
+                if y.abs() < MAX_DISTANCE_THRESHOLD && (azimuth < PI/2.0 + ANGLE_TOLERANCE) && (azimuth > PI/2.0 - ANGLE_TOLERANCE) {
+                    println!("Obstacle detected at LEFT: Orientation {:.2} [rad] and distance {:.2} [m] ", azimuth, y);
+                    break;
+                }
+                if y.abs() < MAX_DISTANCE_THRESHOLD && (azimuth < -PI/2.0 + ANGLE_TOLERANCE) && (azimuth > -PI/2.0 - ANGLE_TOLERANCE) { 
+                    println!("Obstacle detected at RIGHT: Orientation {:.2} [rad] and distance {:.2} [m] ", azimuth, y);
+                    break;
+                }
+
+                if x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < ANGLE_TOLERANCE {
+                    println!("Obstacle detected at x FRONT: orientation {:.2} [rad] and distance {:.2} [m]", azimuth, x);
+                    break;
+                }
+                if x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < (PI + ANGLE_TOLERANCE) && (azimuth.abs() > PI - ANGLE_TOLERANCE) {
+                    println!("Obstacle detected at x BACK: orientation {:.2} [rad] and distance {:.2} [m]", azimuth, x);
+                    break;
+                }  
+            }
         },
     )?;
 
     rclrs::spin(node).map_err(|err| err.into())
-}
-
-fn extract_orientation_from_pointcloud(msg: &PointCloud2) -> Vec<(f32, f32)> {
-    let mut orientations = Vec::new();
-
-    let point_step = msg.point_step as usize; // Bytes per point
-    if msg.data.is_empty() {
-        eprintln!("PointCloud2 data buffer is empty!");
-        return orientations;
-    }
-
-    for point in msg.data.chunks(point_step) {
-        // Extract x, y, z fields (offsets 0, 4, 8 respectively)
-        let x = f32::from_le_bytes(point[0..4].try_into().unwrap());
-        let y = f32::from_le_bytes(point[4..8].try_into().unwrap());
-        let z = f32::from_le_bytes(point[8..12].try_into().unwrap());
-
-        // Calculate azimuth (theta) and elevation (phi)
-        let azimuth = y.atan2(x); // Angle in radians
-        let distance = (x * x + y * y + z * z).sqrt();
-        let elevation = (z / distance).asin();
-
-        // Store the orientation as (azimuth, elevation)
-        orientations.push((azimuth, elevation));
-    }
-
-    orientations
 }
 
 
@@ -559,25 +551,16 @@ $ ros2 run rust_apps scan_subscriber_node
 
 Output:
 ```
-Point 3656: Azimuth = 0.980 rad, Elevation = 0.052 rad
-Point 3657: Azimuth = 0.980 rad, Elevation = 0.157 rad
-Point 3658: Azimuth = 0.980 rad, Elevation = 0.192 rad
-Point 3659: Azimuth = 0.995 rad, Elevation = -0.262 rad
-Point 3660: Azimuth = 0.995 rad, Elevation = -0.227 rad
-Point 3661: Azimuth = 0.995 rad, Elevation = -0.192 rad
-Point 3662: Azimuth = 0.995 rad, Elevation = -0.157 rad
-Point 3663: Azimuth = 0.995 rad, Elevation = -0.122 rad
-Point 3664: Azimuth = 0.995 rad, Elevation = -0.087 rad
-Point 3665: Azimuth = 0.995 rad, Elevation = -0.052 rad
-Point 3666: Azimuth = 0.995 rad, Elevation = -0.017 rad
-Point 3667: Azimuth = 0.995 rad, Elevation = 0.017 rad
-Point 3668: Azimuth = 0.995 rad, Elevation = 0.122 rad
-Point 3669: Azimuth = 0.995 rad, Elevation = 0.192 rad
-Point 3670: Azimuth = 1.009 rad, Elevation = -0.262 rad
-Point 3671: Azimuth = 1.009 rad, Elevation = -0.227 rad
-Point 3672: Azimuth = 1.009 rad, Elevation = -0.192 rad
-Point 3673: Azimuth = 1.009 rad, Elevation = -0.157 rad
-Point 3674: Azimuth = 1.009 rad, Elevation = -0.122 rad
+Obstacle detected at x BACK: orientation -3.07 [rad] and distance -0.91 [m]
+Obstacle detected at x FRONT: orientation 0.09 [rad] and distance 0.88 [m]
+Obstacle detected at LEFT: Orientation 1.48 [rad] and distance 0.96 [m] 
+Obstacle detected at LEFT: Orientation 1.48 [rad] and distance 0.90 [m] 
+Obstacle detected at x FRONT: orientation -0.09 [rad] and distance 0.94 [m]
+Obstacle detected at x BACK: orientation -3.10 [rad] and distance -0.88 [m]
+Obstacle detected at x BACK: orientation 3.10 [rad] and distance -0.92 [m]
+Obstacle detected at x BACK: orientation -3.14 [rad] and distance -0.90 [m]
+Obstacle detected at x FRONT: orientation 0.08 [rad] and distance 0.89 [m]
+Obstacle detected at RIGHT: Orientation -1.51 [rad] and distance -0.87 [m] 
 ```
 
 ### <a name="howtocreateapublishertocmdvelinrust"></a> 4.4 How to Create a cmd_vel Publisher in Rust
@@ -592,6 +575,10 @@ use std::env;
 use anyhow::{Error, Result};
 use geometry_msgs::msg::Twist as Twist;
 
+const INITIAL_VELOCITY: f64 = 1.0;
+const VELOCITY_DECREASE: f64 = 0.05;
+const VELOCITY_THRESHOLD: f64 = 1.0;
+
 fn main() -> Result<(), Error> {
     let context = rclrs::Context::new(env::args())?;
 
@@ -601,16 +588,14 @@ fn main() -> Result<(), Error> {
 
     let mut cmd_vel_message = Twist::default();
 
-    let mut velocity = 1.0;
-    let velocity_threshold = 1.0;
-    let velocity_decrease = 0.05;
+    let mut velocity = INITIAL_VELOCITY;
 
     while context.ok() {
         cmd_vel_message.linear.x = velocity;
         cmd_vel_message.linear.y = velocity;
         cmd_vel_message.angular.z = 0.0;
-        if velocity < velocity_threshold*(-1.0) {velocity = velocity_threshold}
-        else {velocity-=velocity_decrease};
+        if velocity < VELOCITY_THRESHOLD*(-1.0) {velocity = VELOCITY_THRESHOLD}
+        else {velocity-=VELOCITY_DECREASE};
         println!("Moving velocity lineal x: {:.2} and angular z: {:.2} m/s.",cmd_vel_message.linear.x , cmd_vel_message.angular.z);
         publisher.publish(&cmd_vel_message)?;
         std::thread::sleep(std::time::Duration::from_millis(500));
