@@ -16,6 +16,7 @@
       "--privileged"
       ],
     "containerEnv": {
+      "DISPLAY": "${localEnv:DISPLAY}",
       "QT_X11_NO_MITSHM": "1",
       "TERM": "xterm-256color"
     },

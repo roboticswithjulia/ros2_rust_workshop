@@ -45,7 +45,7 @@ https://github.com/ros2-rust/ros2_rust.
 ## <a name="setupworkspace"></a> 3. How to run the robot simulation
 
 1. Run the simulation in _Gazebo_ in `Terminal 1`
-   >The simulation may take time to load on first launch. Wait for it to open completely, then press `Ctrl+C` to close it. When using devcontainers, run `export DISPLAY=:1` before restarting the simulation."
+   >The simulation may take time to load on first launch. Wait for it to open completely, then press `Ctrl+C` to close it. When using devcontainers, run `export DISPLAY=:1` before restarting the simulation and wait until starts."
 
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
@@ -67,7 +67,10 @@ cd ~/ros2_rust_workshop/ros_ws
 source /opt/ros/humble/setup.sh 
 . install/setup.sh 
 ros2 topic list
+```
+`Terminal 2` Output:
 
+```bash
 /base_to_footprint_pose
 /body_pose
 /clicked_point
@@ -129,13 +132,13 @@ $ cargo new <pkg_name>
 
 Execute in `terminal #2`:
 ```bash
-$ cd ~/ros2_rust_workshop/ros_ws/src
-$ cargo new rust_apps
+cd ~/ros2_rust_workshop/ros_ws/src
+cargo new rust_apps
 ```
 
 Each Cargo package in ROS2 will have the following file and folder structure:
 
-- `src` folder: Contains source files (Rust, CPP, Python).
+- `src` folder: Contains Rust source files.
 - `Cargo.toml`: File where you can define dependencies (_crates_), metadata, and some compiler configurations.
 - `Cargo.lock`: Contains exact information about your dependencies. It is maintained by Cargo and should not be edited manually.
 
@@ -147,8 +150,12 @@ These are essential, so remember the following:
 
 Execute in  `Terminal #2`:
 ```bash
-$ cd ~/ros2_rust_workshop/ros_ws/src/rust_apps
-$ tree -c
+cd ~/ros2_rust_workshop/ros_ws/src/rust_apps
+tree -c
+```
+
+`Terminal #2` output:
+```bash
 .
 |-- Cargo.toml
 `-- src
@@ -159,9 +166,9 @@ $ tree -c
 
 For ROS to recognize that this is a ROS package, it's necessary to add a **package.xml** file. This file contains metadata information about the package, such as its name, version, author, and necessary dependencies.
 
-To create a **package.xml** file inside the _rust_apps_ directory and copy the provided code, follow these steps:
+1. Create a new a **package.xml** file inside the _rust_apps_ directory `ros2_rust_workshop/ros_ws/src/rust_apps/package.xml`.
 
-Editor: `rust_apps/package.xml`
+2. Copy the following code inside `ros2_rust_workshop/ros_ws/src/rust_apps/package.xml`.
 ```xml
 <package format="3">
   <name>rust_apps</name>
@@ -241,7 +248,6 @@ let node = rclrs::create_node(&context, "<node_name>")?;
 ##### 4.2.3.3 Create a subscriber.
 
 ```rust
-source
 pub fn create_subscription<T, Args>(
     &self,
     topic: &str,
@@ -253,11 +259,12 @@ where
 ```
 
 ```rust
-let _subscription = node.create_subscription::<sensor_msgs::msg::LaserScan, _>(
-    "scan",
+let _subscription = node.create_subscription::<PointCloud2, _>(
+    "velodyne_points",
     rclrs::QOS_PROFILE_DEFAULT,
     move |msg: sensor_msgs::msg::LaserScan| {
-        println!("Angle min: '{}'", msg.angle_min);
+        let point_step = msg.point_step as usize; 
+        println!("Bytes per point: '{}'", point_step);
     },
 )?;
 ```
@@ -279,7 +286,7 @@ let publisher = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEF
 publisher.publish(&cmd_vel_message)?;
 ```
 
-##### 4.2.3.5 What QoSProfile (Quality of Service Profile) do we have implemented?
+##### 4.2.3.5 Which QoSProfile (Quality of Service Profile) does Rust offers?
 
 - QOS_PROFILE_CLOCK
 - QOS_PROFILE_DEFAULT
@@ -334,15 +341,17 @@ impl Rectangle {
 
 #### 4.3.1 Study the Message Contained in the Topic
 
-Let's see how to create a subscriber to the `/scan` topic using Rust.
+Let's see how to create a subscriber to the `/velodyne_points` topic using Rust.
 
 1. First, let's subscribe to the topic to see what it contains.
 
 Execute in `Terminal #2`:
 ```bash
-$ source /opt/ros/humble/setup.sh
-$ ros2 topic echo /velodyne_points
-
+source /opt/ros/humble/setup.sh
+ros2 topic echo /velodyne_points
+```
+`Terminal #2` output:
+```bash
 header:
   stamp:
     sec: 287
@@ -389,19 +398,23 @@ data:
 
 2. To create a subscriber using Rust, we need to know what type of message and attributes the `/velodyne_points` topic contains.
 
-Execute in `Terminal #2`:
+2.1 Execute in `Terminal #2`:
 ```bash
-$ ros2 topic info /velodyne_points
-
+ros2 topic info /velodyne_points
+```
+`Terminal #2` output:
+```bash
 Type: sensor_msgs/msg/PointCloud2
 Publisher count: 1
 Subscription count: 0
 ```
 
-Execute in Terminal #2:
+2.2 Execute in `Terminal #2`:
 ```bash
-$ ros2 interface show sensor_msgs/msg/PointCloud2
-
+ros2 interface show sensor_msgs/msg/PointCloud2
+```
+`Terminal #2` output:
+```bash
 # Time of sensor data acquisition, and the coordinate frame ID (for 3d points).
 std_msgs/Header header
         builtin_interfaces/Time stamp
@@ -442,14 +455,14 @@ bool is_dense        # True if there are no invalid points
 
 1. Change the file name `main.rs -> scan_subscriber.rs`.
 
-2. Execute in `Terminal #2`:
+Execute in `Terminal #2`:
 ```bash
-$ cd ~/ros2_rust_workshop/ros_ws/src/rust_apps/src
-$ mv main.rs scan_subscriber.rs
+cd ~/ros2_rust_workshop/ros_ws/src/rust_apps/src
+mv main.rs scan_subscriber.rs
 ```
 
 
-3. Open in code editor `rust_apps/src/scan_subscriber.rs`
+2. Open in code editor `rust_apps/src/scan_subscriber.rs`
 
 ```bash
 use std::{
@@ -489,7 +502,6 @@ fn main() -> Result<(), Error> {
                     println!("Obstacle detected at RIGHT: Orientation {:.2} [rad] and distance {:.2} [m] ", azimuth, y);
                     break;
                 }
-
                 if x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < ANGLE_TOLERANCE {
                     println!("Obstacle detected at x FRONT: orientation {:.2} [rad] and distance {:.2} [m]", azimuth, x);
                     break;
@@ -507,18 +519,35 @@ fn main() -> Result<(), Error> {
 
 
 ```
-4. Add ROS2 dependencies manually: Add **sensor_msgs** in the **package.xml** file.
+3. Add ROS2 dependencies manually: Add **sensor_msgs** in the **package.xml** file.
 
-Editor: `rust_apps/package.xml`
 ```xml
+  <package format="3">
+  <name>rust_apps</name>
+  <version>0.0.0</version>
+  <description>ROS2 Rust main package</description>
+  <maintainer email="user@gmail.com">user</maintainer>
+  <license>MIT</license>
+
+  <depend>rclrs</depend>
   <depend>sensor_msgs</depend>  
+  <export>
+    <build_type>ament_cargo</build_type>
+  </export>
+</package>
 ```
 
-5. Add dependencies with other _crates_ and link the file with the ROS2 node in `/ros2_rust_ws/src/rust_apps/cargo.toml`.
+4. Add dependencies with other _crates_ and link the file with the ROS2 node in `/ros2_rust_ws/src/rust_apps/cargo.toml`.
 
-Editor: `rust_apps/cargo.toml`
 
 ```toml
+[package]
+name = "rust_apps"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [dependencies.sensor_msgs]
 sensor_msgs = "*"
 
@@ -531,26 +560,26 @@ path = "src/scan_subscriber.rs"
 
 Execute in `Terminal #2`:
 ```bash
-$ cd ~/ros2_rust_workshop/ros_ws/src/rust_apps
-$ cargo add anyhow
-$ cargo add rclrs
+cd ~/ros2_rust_workshop/ros_ws/src/rust_apps
+cargo add anyhow
+cargo add rclrs
 ```
 
 7. Build the node:
 
 Execute in `Terminal #2`:
 ```bash
-$ cd ~/ros2_rust_workshop/ros_ws
-$ colcon build --packages-select rust_apps
+cd ~/ros2_rust_workshop/ros_ws
+colcon build --packages-select rust_apps
 ```
 
 #### 4.3.3 Code Execution
 
 Execute in Terminal #2:
 ```bash
-$ cd ~/ros2_rust_workshop/ros_ws
-$ source install/setup.sh
-$ ros2 run rust_apps scan_subscriber_node
+cd ~/ros2_rust_workshop/ros_ws
+source install/setup.sh
+ros2 run rust_apps scan_subscriber_node
 ```
 
 Output:
@@ -565,9 +594,17 @@ Obstacle detected at x BACK: orientation 3.10 [rad] and distance -0.92 [m]
 Obstacle detected at x BACK: orientation -3.14 [rad] and distance -0.90 [m]
 Obstacle detected at x FRONT: orientation 0.08 [rad] and distance 0.89 [m]
 Obstacle detected at RIGHT: Orientation -1.51 [rad] and distance -0.87 [m] 
+...
 ```
 
-### <a name="howtocreateapublishertocmdvelinrust"></a> 4.4 How to Create a Publisher
+
+<div align="center">
+    <img src="../videos/velodyne_subscriber_output.gif" width="700" alt="velodyne subscriber output">
+</div>
+
+
+
+### <a name="howtocreateapublishertocmdvelinrust"></a> 4.4 How to create a Publisher
 
 #### 4.4.1 Code Implementation
 
