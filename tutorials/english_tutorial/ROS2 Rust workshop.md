@@ -12,13 +12,15 @@ In this workshop, you'll learn the following:
 
 * [1. What is / Why Rust?](#whatisrust)
 * [2. How to install Rust with ROS2](#howtoinstallrust)
-* [3. Run the simulation](#setupworkspace)
-* [4. How to move a robot with ROS2 and Rust](#movearobotwithROS2)
+* [3. How to run the robot simulation](#setupworkspace)
+* [4. How to interact with a robot using ROS2 and Rust](#movearobotwithROS2)
 * [4.1 How to create a ROS package in Rust](#createarustrospackage)
 * [4.2 Basic Rust programming tips](#basicrustprogrammingtips)
-* [4.3 How to create a subscriber in Rust](#howtocreateasubscribertoscantopicinrust)
-* [4.4 How to create a publisher in Rust](#howtocreateapublishertocmdvelinrust)
-* [4.5 How to create a subscriber and publisher in the same node](#howtocreatasubandpub)
+* [4.3 How to create a Subscriber](#howtocreateasubscribertoscantopicinrust)
+* [4.4 How to create a Publisher](#howtocreateapublishertocmdvelinrust)
+* [4.5 How to create a Subscriber and a Publisher using the same node](#howtocreatasubandpub)
+* [4.6 How to create a Service](#howtocreateaservice)
+* [4.7 How to create a Message](#howtocreateamessage)
 * [5. Future work](#futurework)
 
 ## <a name="whatisrust"></a> 1. What is / Why Rust?
@@ -40,15 +42,17 @@ Here are some key features and aspects of Rust:
 ROS2 packages cannot be located by default within Rust packages. The only way to work with it currently is to install it from source or using Docker. These resources can be found here:
 https://github.com/ros2-rust/ros2_rust.
 
-## <a name="setupworkspace"></a> 3. Run the Simulation
+## <a name="setupworkspace"></a> 3. How to run the robot simulation
 
 1. Run the simulation in _Gazebo_ in `Terminal 1`
-   >It might take a while the first time it opens, wait for the simulation to open and proceed with `Ctrl+C` and run it again
+   >The simulation may take time to load on first launch. Wait for it to open completely, then press `Ctrl+C` to close it. When using devcontainers, run `export DISPLAY=:1` before restarting the simulation."
 
 ```bash
-$ cd ~/ros2_rust_workshop/ros_ws
-$ . install/setup.sh
-$ ros2 launch go2_config gazebo_velodyne.launch.py world:=$(ros2 pkg prefix go2_config)/share/go2_config/worlds/outdoor.world
+cd ~/ros2_rust_workshop/ros_ws
+source /opt/ros/humble/setup.bash 
+colcon build
+. install/setup.sh
+ros2 launch go2_config gazebo_velodyne.launch.py world:=$(ros2 pkg prefix go2_config)/share/go2_config/worlds/outdoor.world
 ```
 
 <div align="center">
@@ -56,13 +60,13 @@ $ ros2 launch go2_config gazebo_velodyne.launch.py world:=$(ros2 pkg prefix go2_
 </div>
 
 
-2. See what *topics* are available in `Terminal 2`
+1. See what *topics* are available. Open a terminal, `Terminal 2` and run:
 
 ```bash
-$ cd ~/ros2_rust_workshop/ros_ws
-$ source /opt/ros/humble/setup.sh 
-$ . install/setup.sh 
-$ ros2 topic list
+cd ~/ros2_rust_workshop/ros_ws
+source /opt/ros/humble/setup.sh 
+. install/setup.sh 
+ros2 topic list
 
 /base_to_footprint_pose
 /body_pose
@@ -97,7 +101,7 @@ $ ros2 topic list
 /velodyne_points
 ```
 
-## <a name="movearobotwithROS2"></a> 4. How to Move a Robot with ROS2 and Rust
+## <a name="movearobotwithROS2"></a> 4. How to interact with a robot using ROS2 and Rust
 
 ### <a name="createarustrospackage"></a> 4.1 How to Create a ROS Package in Rust
 
@@ -563,7 +567,7 @@ Obstacle detected at x FRONT: orientation 0.08 [rad] and distance 0.89 [m]
 Obstacle detected at RIGHT: Orientation -1.51 [rad] and distance -0.87 [m] 
 ```
 
-### <a name="howtocreateapublishertocmdvelinrust"></a> 4.4 How to Create a cmd_vel Publisher in Rust
+### <a name="howtocreateapublishertocmdvelinrust"></a> 4.4 How to Create a Publisher
 
 #### 4.4.1 Code Implementation
 
@@ -660,7 +664,7 @@ To stop the robot, you can terminate the program with `Ctrl+C` and then run the 
 $ ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
 ```
 
-### <a name="howtocreatasubandpub"></a> 4.5 How to Create a Subscriber and Publisher in the Same Node
+### <a name="howtocreatasubandpub"></a> 4.5 How to create a subscriber and a publisher using the same node
 
 #### 4.5.1 Code Implementation
 
@@ -776,7 +780,7 @@ impl ObstacleAvoidance {
 
 fn main() -> Result<(), Error> {
     let context = rclrs::Context::new(env::args())?;
-    let node = rclrs::create_node(&context, "minimal_subscriber_one")?;
+    let node = rclrs::create_node(&context, "obstacle_avoidance")?;
     let subscriber_node_one = ObstacleAvoidance::new(&node)?;
     while context.ok() {
         subscriber_node_one.publish();

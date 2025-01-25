@@ -2,22 +2,28 @@
 {
     "name": "ros2_rust_roscon_spain:latest",
     "build": {
-    "context": "..",
-    "dockerfile": "../docker/Dockerfile",
-    "args": {
-      "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}"
-    }
+      "context": "..",
+      "dockerfile": "../Dockerfile",
+      "args": {
+        "PROJECT_FOLDER": "/home/cuser/ros2_rust_workshop",
+        "USERNAME": "cuser",
+        "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}"
+      }
     },
-    "workspaceFolder": "/home/cuser/ros2_rust_workshop",
     "runArgs": [
-    "--network=host",
-    "--privileged"
-    ],
+      "--network=host",
+      "--hostname=devcontainer",
+      "--privileged"
+      ],
     "containerEnv": {
-      "DISPLAY": "${localEnv:DISPLAY}",
+      "QT_X11_NO_MITSHM": "1",
       "TERM": "xterm-256color"
     },
-
+    "workspaceFolder": "/home/cuser/ros2_rust_workshop",
+    "mounts": [
+      "source=${localWorkspaceFolder},target=/home/cuser/ros2_rust_workshop/docu,type=bind", // Workspace folder
+      "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached" // X11 socket
+    ],
     "remoteUser": "cuser",
     "containerEnv": {
       // Convenience, for shell colors, aliases, etc
