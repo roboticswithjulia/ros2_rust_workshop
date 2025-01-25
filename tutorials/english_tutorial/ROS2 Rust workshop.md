@@ -168,7 +168,7 @@ For ROS to recognize that this is a ROS package, it's necessary to add a **packa
 
 1. Create a new a **package.xml** file inside the _rust_apps_ directory `~/ros2_rust_workshop/ros_ws/src/rust_apps/package.xml`.
 
-2. Copy the following code inside `~/ros2_rust_workshop/ros_ws/src/rust_apps/package.xml`.
+2. Copy the following code inside `rust_apps/package.xml`.
 ```xml
 <package format="3">
   <name>rust_apps</name>
@@ -545,7 +545,7 @@ fn main() -> Result<(), Error> {
 </package>
 ```
 
-4. Add dependencies with other _crates_ and link the file with the ROS2 node in `/ros2_rust_ws/src/rust_apps/cargo.toml`.
+4. Add dependencies with other _crates_ and link the file with the ROS2 node in `rust_apps/cargo.toml`.
 
 
 ```toml
@@ -618,7 +618,7 @@ Obstacle detected at RIGHT: Orientation -1.51 [rad] and distance -0.87 [m]
 
 1. Create a new file inside the Rust package *rust_apps* named *cmd_vel_publisher.rs* and paste the following code:
 
-IDE: `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_vel_publisher.rs`
+IDE: `rust_apps/src/cmd_vel_publisher.rs`
 ```rust
 use std::env;
 use anyhow::{Error, Result};
@@ -756,65 +756,59 @@ ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0
 
 Code editor: `rust_apps/src/obstacle_avoidance.rs`
 
-``` bash
-use std::{
-    env,
-    sync::{
-        Arc, Mutex,
-    },
-};
+``` rust
+// Dependencies for ROS2, synchronization and geometry types
+use std::{env, sync::{Arc, Mutex}};
 use sensor_msgs::msg::PointCloud2 as PointCloud2;
 use geometry_msgs::msg::Twist as Twist;
 use anyhow::{Error, Result};
 use std::f32::consts::PI;
 
-/// Constants for the obstacle avoidance parameters
-const ANGULAR_SPEED: f64 = 0.5;
-const LINEAR_SPEED: f64= 2.0;
-const MAX_DISTANCE_THRESHOLD: f32 = 1.0;
-const ANGLE_TOLERANCE: f32 = 0.1;
+// Configuration constants for robot movement and obstacle detection
+const ANGULAR_SPEED: f64 = 0.5;      // Turning speed in rad/s
+const LINEAR_SPEED: f64= 2.0;        // Forward/backward speed in m/s
+const MAX_DISTANCE_THRESHOLD: f32 = 1.0;  // Minimum distance to obstacle in meters
+const ANGLE_TOLERANCE: f32 = 0.1;    // Angle tolerance for direction detection
 
-
+// Main struct managing obstacle avoidance behavior
 struct ObstacleAvoidance {
-    _subscription:Arc<rclrs::Subscription<PointCloud2>>,
-    publication: Arc<rclrs::Publisher<Twist>>,
-    twist_msg:  Arc<Mutex<Twist>>
+    _subscription: Arc<rclrs::Subscription<PointCloud2>>,  // LiDAR data subscriber
+    publication: Arc<rclrs::Publisher<Twist>>,            // Velocity command publisher
+    twist_msg: Arc<Mutex<Twist>>                         // Thread-safe velocity message
 }
 
 impl ObstacleAvoidance {
-    /// Creates a new instance of ObstacleAvoidance
-    /// 
-    /// # Arguments
-    /// * `node` - The ROS2 node to attach the publisher and subscriber to
-    /// 
-    /// # Returns
-    /// * `Result<Self, rclrs::RclrsError>` - The created instance or an error
-    
+    // Constructor for ObstacleAvoidance system
     pub fn new(node: &rclrs::Node) -> Result<Self, rclrs::RclrsError> {
         let twist_msg = Arc::new(Mutex::new(Twist::default()));
         let publication = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEFAULT)?;
         let twist_msg_clone = Arc::clone(&twist_msg);
 
+        // Subscribe to LiDAR point cloud data
         let _subscription = node.create_subscription::<sensor_msgs::msg::PointCloud2, _>(
             "velodyne_points",
             rclrs::QOS_PROFILE_DEFAULT,
             move |msg: sensor_msgs::msg::PointCloud2| {
                 let mut twist_msg = twist_msg_clone.lock().unwrap();
-                let point_step = msg.point_step as usize; // Bytes per point
-                for point in msg.data.chunks(point_step) {
+                let point_step = msg.point_step as usize;
 
-                    // Extract x, y, z fields (offsets 0, 4, 8 respectively)
+                // Process each point in the cloud
+                for point in msg.data.chunks(point_step) {
+                    // Extract point coordinates
                     let x = f32::from_le_bytes(point[0..4].try_into().unwrap());
                     let y = f32::from_le_bytes(point[4..8].try_into().unwrap());
-                
-                    // Calculate azimuth (theta) and elevation (phi)
-                    let azimuth = y.atan2(x); // Angle in radians
+                    
+                    // Calculate point angle relative to robot
+                    let azimuth = y.atan2(x);
 
+                    // Default movement: forward
                     twist_msg.linear.x = LINEAR_SPEED; 
                     twist_msg.linear.y = 0.0;
                     twist_msg.angular.z = 0.0; 
-       
+    
+                    // Check for obstacles in different directions and adjust movement
 
+                    // Left obstacle detection
                     if y.abs() < MAX_DISTANCE_THRESHOLD && (azimuth < PI/2.0 + ANGLE_TOLERANCE) && (azimuth > PI/2.0 - ANGLE_TOLERANCE) {
                         println!("Obstacle detected at LEFT: orientation {:.2} [rad], distance {:.2} [m], turning RIGHT", azimuth, y);
                         twist_msg.linear.x = 0.0; 
@@ -822,6 +816,8 @@ impl ObstacleAvoidance {
                         twist_msg.angular.z = -ANGULAR_SPEED;
                         break;
                     }
+
+                    // Right obstacle detection
                     if y.abs() < MAX_DISTANCE_THRESHOLD && (azimuth < -PI/2.0 + ANGLE_TOLERANCE) && (azimuth > -PI/2.0 - ANGLE_TOLERANCE) { 
                         println!("Obstacle detected at RIGHT: orientation {:.2} [rad], distance {:.2} [m], turning LEFT", azimuth, y);
                         twist_msg.linear.x = 0.0; 
@@ -830,14 +826,17 @@ impl ObstacleAvoidance {
                         break;
                     }
 
-                    if   x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < ANGLE_TOLERANCE {
+                    // Front obstacle detection
+                    if x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < ANGLE_TOLERANCE {
                         println!("Obstacle detected at FRONT: orientation {:.2} [rad], distance {:.2} [m], going BACKWARD", azimuth, x);
                         twist_msg.linear.x = -LINEAR_SPEED;
                         twist_msg.linear.y = 0.0;
                         twist_msg.angular.z = ANGULAR_SPEED;
                         break;
                     }
-                    if   x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < (PI + ANGLE_TOLERANCE) && (azimuth.abs() > PI - ANGLE_TOLERANCE) {
+
+                    // Back obstacle detection
+                    if x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < (PI + ANGLE_TOLERANCE) && (azimuth.abs() > PI - ANGLE_TOLERANCE) {
                         println!("Obstacle detected at BACK: orientation {:.2} [rad], distance {:.2} [m], going FORWARD", azimuth, x);
                         twist_msg.linear.x = LINEAR_SPEED;
                         twist_msg.linear.y = 0.0;
@@ -848,36 +847,58 @@ impl ObstacleAvoidance {
             },
         )?;
 
-        Ok(Self{
-            _subscription,
-            publication,
-            twist_msg,
-        })
+        Ok(Self{_subscription, publication, twist_msg})
     }
 
-    pub fn publish(&self) 
-    {
-      let twist_msg = self.twist_msg.lock().unwrap();
-      let _ = self.publication.publish(&*twist_msg);
+    // Publish current velocity commands to the robot
+    pub fn publish(&self) {
+        let twist_msg = self.twist_msg.lock().unwrap();
+        let _ = self.publication.publish(&*twist_msg);
     }
 }
 
+// Initialize ROS2 node and run obstacle avoidance loop
 fn main() -> Result<(), Error> {
     let context = rclrs::Context::new(env::args())?;
     let node = rclrs::create_node(&context, "obstacle_avoidance")?;
     let subscriber_node_one = ObstacleAvoidance::new(&node)?;
+
     while context.ok() {
         subscriber_node_one.publish();
         let _ = rclrs::spin_once(node.clone(), Some(std::time::Duration::from_millis(10)));
         std::thread::sleep(std::time::Duration::from_millis(500));
     }
     Ok(())
-
 }
 ```
 2. Add the new executable in `Cargo.toml`
 
 ```toml
+[package]
+name = "rust_apps"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.95"
+rclrs = "0.4.1"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies.sensor_msgs]
+sensor_msgs = "*"
+
+[dependencies.geometry_msgs]
+geometry_msgs = "*"
+
+[[bin]]
+name = "scan_subscriber_node"
+path = "src/scan_subscriber.rs"
+
+[[bin]]
+name = "cmd_vel_publisher_node"
+path = "src/cmd_vel_publisher.rs"
+
 [[bin]]
 name = "obstacle_avoidance_node"
 path = "src/obstacle_avoidance.rs"
@@ -885,8 +906,8 @@ path = "src/obstacle_avoidance.rs"
 Execute in `Terminal #2`:
 
 ```bash
-$ cd ~/ros2_rust_workshop/ros_ws
-$ colcon build --packages-select rust_apps
+cd ~/ros2_rust_workshop/ros_ws
+colcon build --packages-select rust_apps
 ```
 
 
@@ -895,19 +916,22 @@ $ colcon build --packages-select rust_apps
 Execute in `Terminal #2`:
 
 ```bash
-$ source install/setup.sh
-$ ros2 run rust_apps obstacle_avoidance_node
+source install/setup.sh
+ros2 run rust_apps obstacle_avoidance_node
 ```
 
 
-![cmd_vel_2](add video)
+<div align="center">
+    <img src="../videos/obstacle_avoidance.gif" width="800" alt="obstacle avoidance">
+</div>
+
 
 
 
 To stop the robot, you can terminate the program with `Ctrl+C` and then run the following command:
 
 ```bash
-$ ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
 ```
 
 ## 5. Future work
@@ -924,3 +948,18 @@ ROS2 Rust:
 Learn Rust:
 - [The Rust Book](https://doc.rust-lang.org/book/)
 - [The 9 Best Rust Programming Courses and Books for Beginners in 2024](https://medium.com/javarevisited/7-best-rust-programming-courses-and-books-for-beginners-in-2021-2ed2311af46c)
+
+<br>
+<br>
+
+<br>
+
+
+
+
+
+
+
+<div align="center">
+    <img src="../images/thank_you_en.png" width="1100" alt="thank you">
+</div>
