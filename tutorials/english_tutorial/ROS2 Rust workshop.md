@@ -742,13 +742,6 @@ ros2 run rust_apps cmd_vel_publisher_node
 </div>
 
 
-
-
-
-
-
-
-
 To stop the robot, you can terminate the program with `Ctrl+C` and then run the following command:
 
 ```bash
