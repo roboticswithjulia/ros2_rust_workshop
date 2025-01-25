@@ -44,7 +44,7 @@ https://github.com/ros2-rust/ros2_rust.
 
 ## <a name="setupworkspace"></a> 3. How to run the robot simulation
 
-1. Run the simulation in _Gazebo_ in `Terminal 1`
+1. Run the simulation in _Gazebo_ in `Terminal #1`
    >The simulation may take time to load on first launch. Wait for it to open completely, then press `Ctrl+C` to close it. When using devcontainers, run `export DISPLAY=:1` before restarting the simulation and wait until starts."
 
 ```bash
@@ -60,7 +60,7 @@ ros2 launch go2_config gazebo_velodyne.launch.py world:=$(ros2 pkg prefix go2_co
 </div>
 
 
-1. See what *topics* are available. Open a terminal, `Terminal 2` and run:
+1. See what *topics* are available. Open a terminal, `terminal #2` and run:
 
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
@@ -68,7 +68,7 @@ source /opt/ros/humble/setup.sh
 . install/setup.sh 
 ros2 topic list
 ```
-`Terminal 2` Output:
+`terminal #2` Output:
 
 ```bash
 /base_to_footprint_pose
@@ -166,9 +166,9 @@ tree -c
 
 For ROS to recognize that this is a ROS package, it's necessary to add a **package.xml** file. This file contains metadata information about the package, such as its name, version, author, and necessary dependencies.
 
-1. Create a new a **package.xml** file inside the _rust_apps_ directory `ros2_rust_workshop/ros_ws/src/rust_apps/package.xml`.
+1. Create a new a **package.xml** file inside the _rust_apps_ directory `~/ros2_rust_workshop/ros_ws/src/rust_apps/package.xml`.
 
-2. Copy the following code inside `ros2_rust_workshop/ros_ws/src/rust_apps/package.xml`.
+2. Copy the following code inside `~/ros2_rust_workshop/ros_ws/src/rust_apps/package.xml`.
 ```xml
 <package format="3">
   <name>rust_apps</name>
@@ -464,59 +464,67 @@ mv main.rs scan_subscriber.rs
 
 2. Open in code editor `rust_apps/src/scan_subscriber.rs`
 
-```bash
+```Rust
 use std::{
-    env,
-    f32::consts::PI,
+   env,
+   f32::consts::PI,
 };
 use anyhow::{Error, Result};
 use sensor_msgs::msg::PointCloud2;
 use std::convert::TryInto;
 
-const MAX_DISTANCE_THRESHOLD: f32 = 1.0;
-const ANGLE_TOLERANCE: f32 = 0.1;
+// Constants for obstacle detection
+const MAX_DISTANCE_THRESHOLD: f32 = 1.0;  // Maximum distance to detect obstacles
+const ANGLE_TOLERANCE: f32 = 0.1;         // Tolerance for angle detection
 
 fn main() -> Result<(), Error> {
-    let context = rclrs::Context::new(env::args())?;
-    let node = rclrs::create_node(&context, "scan_subscriber")?;
-    let _subscription = node.create_subscription::<PointCloud2, _>(
-        "velodyne_points",
-        rclrs::QOS_PROFILE_DEFAULT,
-        move |msg: PointCloud2| {
-            let point_step = msg.point_step as usize; // Bytes per point
-            for point in msg.data.chunks(point_step) {
+   // Initialize ROS2 context and create node
+   let context = rclrs::Context::new(env::args())?;
+   let node = rclrs::create_node(&context, "scan_subscriber")?;
 
-                // Extract x, y fields (offsets 0, 4 respectively)
-                let x = f32::from_le_bytes(point[0..4].try_into().unwrap());
-                let y = f32::from_le_bytes(point[4..8].try_into().unwrap());
-            
-                // Calculate azimuth (theta) 
-                let azimuth = y.atan2(x); // Angle in radians
+   // Create subscription to velodyne pointcloud topic
+   let _subscription = node.create_subscription::<PointCloud2, _>(
+       "velodyne_points",
+       rclrs::QOS_PROFILE_DEFAULT,
+       move |msg: PointCloud2| {
+           let point_step = msg.point_step as usize; // Bytes per point
+           
+           // Process each point in the cloud
+           for point in msg.data.chunks(point_step) {
+               // Extract x, y coordinates from point data
+               let x = f32::from_le_bytes(point[0..4].try_into().unwrap());
+               let y = f32::from_le_bytes(point[4..8].try_into().unwrap());
+           
+               // Calculate angle from x,y coordinates
+               let azimuth = y.atan2(x); // Angle in radians
 
-                // Check if point is within safe distance
-                if y.abs() < MAX_DISTANCE_THRESHOLD && (azimuth < PI/2.0 + ANGLE_TOLERANCE) && (azimuth > PI/2.0 - ANGLE_TOLERANCE) {
-                    println!("Obstacle detected at LEFT: Orientation {:.2} [rad] and distance {:.2} [m] ", azimuth, y);
-                    break;
-                }
-                if y.abs() < MAX_DISTANCE_THRESHOLD && (azimuth < -PI/2.0 + ANGLE_TOLERANCE) && (azimuth > -PI/2.0 - ANGLE_TOLERANCE) { 
-                    println!("Obstacle detected at RIGHT: Orientation {:.2} [rad] and distance {:.2} [m] ", azimuth, y);
-                    break;
-                }
-                if x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < ANGLE_TOLERANCE {
-                    println!("Obstacle detected at x FRONT: orientation {:.2} [rad] and distance {:.2} [m]", azimuth, x);
-                    break;
-                }
-                if x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < (PI + ANGLE_TOLERANCE) && (azimuth.abs() > PI - ANGLE_TOLERANCE) {
-                    println!("Obstacle detected at x BACK: orientation {:.2} [rad] and distance {:.2} [m]", azimuth, x);
-                    break;
-                }  
-            }
-        },
-    )?;
+               // Check LEFT side obstacles
+               if y.abs() < MAX_DISTANCE_THRESHOLD && (azimuth < PI/2.0 + ANGLE_TOLERANCE) && (azimuth > PI/2.0 - ANGLE_TOLERANCE) {
+                   println!("Obstacle detected at LEFT: Orientation {:.2} [rad] and distance {:.2} [m] ", azimuth, y);
+                   break;
+               }
+               // Check RIGHT side obstacles
+               if y.abs() < MAX_DISTANCE_THRESHOLD && (azimuth < -PI/2.0 + ANGLE_TOLERANCE) && (azimuth > -PI/2.0 - ANGLE_TOLERANCE) { 
+                   println!("Obstacle detected at RIGHT: Orientation {:.2} [rad] and distance {:.2} [m] ", azimuth, y);
+                   break;
+               }
+               // Check FRONT obstacles
+               if x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < ANGLE_TOLERANCE {
+                   println!("Obstacle detected at x FRONT: orientation {:.2} [rad] and distance {:.2} [m]", azimuth, x);
+                   break;
+               }
+               // Check BACK obstacles
+               if x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < (PI + ANGLE_TOLERANCE) && (azimuth.abs() > PI - ANGLE_TOLERANCE) {
+                   println!("Obstacle detected at x BACK: orientation {:.2} [rad] and distance {:.2} [m]", azimuth, x);
+                   break;
+               }  
+           }
+       },
+   )?;
 
-    rclrs::spin(node).map_err(|err| err.into())
+   // Start ROS2 spin loop
+   rclrs::spin(node).map_err(|err| err.into())
 }
-
 
 ```
 3. Add ROS2 dependencies manually: Add **sensor_msgs** in the **package.xml** file.
@@ -599,7 +607,7 @@ Obstacle detected at RIGHT: Orientation -1.51 [rad] and distance -0.87 [m]
 
 
 <div align="center">
-    <img src="../videos/velodyne_subscriber_output.gif" width="700" alt="velodyne subscriber output">
+    <img src="../videos/velodyne_subscriber.gif" width="800" alt="velodyne subscriber">
 </div>
 
 
@@ -610,35 +618,44 @@ Obstacle detected at RIGHT: Orientation -1.51 [rad] and distance -0.87 [m]
 
 1. Create a new file inside the Rust package *rust_apps* named *cmd_vel_publisher.rs* and paste the following code:
 
-Editor: `rust_apps/src/cmd_vel_publisher.rs`
+IDE: `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_vel_publisher.rs`
 ```rust
 use std::env;
 use anyhow::{Error, Result};
 use geometry_msgs::msg::Twist as Twist;
 
+// Constants for velocity control
 const INITIAL_VELOCITY: f64 = 1.0;
 const VELOCITY_DECREASE: f64 = 0.05;
 const VELOCITY_THRESHOLD: f64 = 1.0;
 
 fn main() -> Result<(), Error> {
+    // Initialize ROS2 context
     let context = rclrs::Context::new(env::args())?;
-
+    // Create publisher node
     let node = rclrs::create_node(&context, "cmd_vel_publisher")?; 
-
+    // Create Twist message publisher
     let publisher = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEFAULT)?;
-
+    // Initialize Twist message and velocity
     let mut cmd_vel_message = Twist::default();
-
     let mut velocity = INITIAL_VELOCITY;
-
+    // Main loop
     while context.ok() {
+        // Set linear and angular velocities
         cmd_vel_message.linear.x = velocity;
         cmd_vel_message.linear.y = velocity;
         cmd_vel_message.angular.z = 0.0;
-        if velocity < VELOCITY_THRESHOLD*(-1.0) {velocity = VELOCITY_THRESHOLD}
-        else {velocity-=VELOCITY_DECREASE};
-        println!("Moving velocity lineal x: {:.2} and angular z: {:.2} m/s.",cmd_vel_message.linear.x , cmd_vel_message.angular.z);
+        // Reset velocity if below threshold, otherwise decrease
+        if velocity < VELOCITY_THRESHOLD*(-1.0) {
+            velocity = VELOCITY_THRESHOLD
+        } else {
+            velocity -= VELOCITY_DECREASE
+        };
+        // Log and publish message
+        println!("Moving velocity lineal x: {:.2} and angular z: {:.2} m/s.",
+                cmd_vel_message.linear.x, cmd_vel_message.angular.z);
         publisher.publish(&cmd_vel_message)?;
+        // Sleep for 500ms
         std::thread::sleep(std::time::Duration::from_millis(500));
     }
     Ok(())
@@ -649,44 +666,81 @@ fn main() -> Result<(), Error> {
 
 Editor: `rust_apps/Cargo.toml`
 ```toml
+
+[package]
+name = "rust_apps"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.95"
+rclrs = "0.4.1"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies.sensor_msgs]
+sensor_msgs = "*"
+
 [dependencies.geometry_msgs]
 geometry_msgs = "*"
 
 [[bin]]
+name = "scan_subscriber_node"
+path = "src/scan_subscriber.rs"
+
+[[bin]]
 name = "cmd_vel_publisher_node"
 path = "src/cmd_vel_publisher.rs"
+
+
 ```
 
 Editor: `rust_apps/package.xml`
 ```xml
-<depend>geometry_msgs</depend>  
+<package format="3">
+  <name>rust_apps</name>
+  <version>0.0.0</version>
+  <description>ROS2 Rust main package</description>
+  <maintainer email="user@gmail.com">user</maintainer>
+  <license>MIT</license>
+
+  <depend>rclrs</depend>
+  <depend>sensor_msgs</depend>  
+  <depend>geometry_msgs</depend>  
+  <export>
+    <build_type>ament_cargo</build_type>
+  </export>
+</package>
 ```
 
 3. Build the ROS2 package:
 
 Execute in `Terminal #2`:
 ```bash
-$ cd ~/ros2_rust_workshop/ros_ws
-$ colcon build --packages-select rust_apps
+cd ~/ros2_rust_workshop/ros_ws
+colcon build --packages-select rust_apps
 ```
 
 #### 4.4.2 Code Execution
 
 Execute in `Terminal #2`:
 ```bash
-$ cd ~/ros2_rust_workshop/ros_ws
-$ source install/setup.sh
+cd ~/ros2_rust_workshop/ros_ws
+source install/setup.sh
 ```
-4. Open the gazebo window and look through the robog go2 and execute the node `cmd_vel_publisher`.
+4. Open the gazebo window and look through the robot go2 and execute the node `cmd_vel_publisher`.
 
 Execute in `Terminal #2`:
 ```
-$ source /opt/ros/humble/setup.sh 
-$ ros2 run rust_apps cmd_vel_publisher_node
+source /opt/ros/humble/setup.sh 
+ros2 run rust_apps cmd_vel_publisher_node
 ```
 
 
-![cmd_vel_2](add video)
+<div align="center">
+    <img src="../videos/cmd_vel_publisher.gif" width="800" alt="cmd vel publisher">
+</div>
+
 
 
 
@@ -698,7 +752,7 @@ $ ros2 run rust_apps cmd_vel_publisher_node
 To stop the robot, you can terminate the program with `Ctrl+C` and then run the following command:
 
 ```bash
-$ ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
 ```
 
 ### <a name="howtocreatasubandpub"></a> 4.5 How to create a subscriber and a publisher using the same node
