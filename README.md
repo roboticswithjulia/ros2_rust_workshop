@@ -1,4 +1,4 @@
-# Real-World Robotics Application Development with ROS 2 and Rust
+# Robotics Application Development with ROS 2 and Rust
 
 Tutorial in **English** can be found [here](./tutorials/english_tutorial/ROS2%20Rust%20workshop.md).
 </br>
