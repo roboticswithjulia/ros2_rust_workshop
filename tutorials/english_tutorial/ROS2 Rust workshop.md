@@ -1162,6 +1162,11 @@ fn main() -> Result<(), Error> {
 3. Add a new executable in `~/ros2_rust_workshop/ros_ws/src/rust_apps/Cargo.toml`
 
 ```toml
+(...)
+[dependencies.rust_msgs]
+rust_msgs = "*"
+
+(...)
 [[bin]]
 name = "cmd_service_server"
 path = "src/cmd_service_server.rs"
@@ -1202,7 +1207,130 @@ response:
 rust_msgs.srv.Command_Response(success=True, message='Stopping Robot')
 ```
 
+#### 4.7.2 How to create a Service Client:
 
+1. Create two different files inside `~/ros2_rust_workshop/ros_ws/src/rust_apps/src`
+
+```bash
+cd ~/ros2_rust_workshop/ros_ws/src/rust_apps/src
+touch cmd_service_client_start.rs
+touch cmd_service_client_stop.rs
+
+```
+2. Copy the following code inside `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_client_start.rs`
+```rust
+use std::env;
+
+use anyhow::{Error, Result};
+const START: i32 = 1;
+
+fn main() -> Result<(), Error> {
+    let context = rclrs::Context::new(env::args())?;
+
+    let node = rclrs::create_node(&context, "cmd_service_client_stop")?;
+
+    let client = node.create_client::<rust_msgs::srv::Command>("command")?;
+
+    let request = rust_msgs::srv::Command_Request { command: START };
+
+    println!("Starting client");
+
+    while !client.service_is_ready()? {
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+
+    client.async_send_request_with_callback(
+        &request,
+        move |response: rust_msgs::srv::Command_Response| {
+            println!(
+                "Request command is {} and response is {} with message {}",
+                request.command, response.success, response.message
+            );
+        }
+    )?;
+
+    std::thread::sleep(std::time::Duration::from_millis(500));
+
+    println!("Waiting for response");
+    rclrs::spin(node).map_err(|err| err.into())
+}
+```
+
+3. Copy the following code inside `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_client_stop.rs`
+```rust
+use std::env;
+
+use anyhow::{Error, Result};
+const STOP: i32 = 0;
+
+fn main() -> Result<(), Error> {
+    let context = rclrs::Context::new(env::args())?;
+
+    let node = rclrs::create_node(&context, "cmd_service_client_stop")?;
+
+    let client = node.create_client::<rust_msgs::srv::Command>("command")?;
+
+    let request = rust_msgs::srv::Command_Request { command: STOP };
+
+    println!("Starting client");
+
+    while !client.service_is_ready()? {
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+
+    client.async_send_request_with_callback(
+        &request,
+        move |response: rust_msgs::srv::Command_Response| {
+            println!(
+                "Request command is {} and response is {} with message {}",
+                request.command, response.success, response.message
+            );
+        }
+    )?;
+
+    std::thread::sleep(std::time::Duration::from_millis(500));
+
+    println!("Waiting for response");
+    rclrs::spin(node).map_err(|err| err.into())
+}
+```
+4. Add a two new executable in `~/ros2_rust_workshop/ros_ws/src/rust_apps/Cargo.toml`
+
+```toml
+(...)
+
+[[bin]]
+name = "cmd_service_client_start"
+path = "src/cmd_service_client_start.rs"
+
+[[bin]]
+name = "cmd_service_client_stop"
+path = "src/cmd_service_client_stop.rs"
+```
+5. Using the `terminal #2` execute the server:
+```bash
+colcon build --packages-select rust_apps
+source install/setup.bash
+ros2 run rust_apps cmd_service_server
+```
+6. Using the `terminal #3` compile latest changes and execute the first client:
+```bash
+cd ~/ros2_rust_workshop/ros_ws
+source install/setup.bash
+ros2 run rust_apps cmd_service_client_start
+```
+
+Go2 robot should start walking.
+
+7. Using the `terminal #4` compile latest changes and execute the first client:
+```bash
+cd ~/ros2_rust_workshop/ros_ws
+source install/setup.bash
+ros2 run rust_apps cmd_service_client_stop
+```
+Go2 robot should stop walking.
+
+>You can proceed killing all the terminals with `Ctrl+C`
 
 
 ## 5. Future work
