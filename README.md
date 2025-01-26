@@ -2,7 +2,7 @@
 
 Tutorial in **English** can be found [here](./tutorials/english_tutorial/ROS2%20Rust%20workshop.md).
 </br>
-Tutorial in **Spanish** can be found [here](./tutorials/english_tutorial/ROS2%20Rust%20workshop.md)
+Tutorial in **Spanish** can be found [here](./tutorials/spanish_tutorial/ROS2%20Rust%20workshop.ipynb)
 
 Workshop requirements:
  1. Install **VSCode** - [VSCode installation instructions](https://code.visualstudio.com/docs/setup/linux).
