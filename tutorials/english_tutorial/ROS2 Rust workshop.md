@@ -19,8 +19,8 @@ In this workshop, you'll learn the following:
 * [4.3 How to create a Subscriber](#howtocreateasubscribertoscantopicinrust)
 * [4.4 How to create a Publisher](#howtocreateapublishertocmdvelinrust)
 * [4.5 How to create a Subscriber and a Publisher using the same node](#howtocreatasubandpub)
-* [4.6 How to create a Service](#howtocreateaservice)
-* [4.7 How to create a Message](#howtocreateamessage)
+* [4.6 How to create a Service message](#howtocreateasrvmessage)
+* [4.7 How to create a Service](#howtocreateaservice)
 * [5. Future work](#futurework)
 
 ## <a name="whatisrust"></a> 1. What is / Why Rust?
@@ -480,7 +480,7 @@ const ANGLE_TOLERANCE: f32 = 0.1;         // Tolerance for angle detection
 fn main() -> Result<(), Error> {
    // Initialize ROS2 context and create node
    let context = rclrs::Context::new(env::args())?;
-   let node = rclrs::create_node(&context, "scan_subscriber")?;
+   let node = rclrs::create_node(&context, "scan_subscriber_node")?;
 
    // Create subscription to velodyne pointcloud topic
    let _subscription = node.create_subscription::<PointCloud2, _>(
@@ -633,7 +633,7 @@ fn main() -> Result<(), Error> {
     // Initialize ROS2 context
     let context = rclrs::Context::new(env::args())?;
     // Create publisher node
-    let node = rclrs::create_node(&context, "cmd_vel_publisher")?; 
+    let node = rclrs::create_node(&context, "cmd_vel_publisher_node")?; 
     // Create Twist message publisher
     let publisher = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEFAULT)?;
     // Initialize Twist message and velocity
@@ -860,7 +860,7 @@ impl ObstacleAvoidance {
 // Initialize ROS2 node and run obstacle avoidance loop
 fn main() -> Result<(), Error> {
     let context = rclrs::Context::new(env::args())?;
-    let node = rclrs::create_node(&context, "obstacle_avoidance")?;
+    let node = rclrs::create_node(&context, "obstacle_avoidance_node")?;
     let subscriber_node_one = ObstacleAvoidance::new(&node)?;
 
     while context.ok() {
@@ -911,7 +911,7 @@ colcon build --packages-select rust_apps
 ```
 
 
-#### 4.5.1 Code Execution
+#### 4.5.2 Code Execution
 
 Execute in `Terminal #2`:
 
@@ -921,11 +921,9 @@ ros2 run rust_apps obstacle_avoidance_node
 ```
 
 
-<div align="center">
+<!-- <div align="center">
     <img src="../videos/obstacle_avoidance.gif" width="800" alt="obstacle avoidance">
-</div>
-
-
+</div> -->
 
 
 To stop the robot, you can terminate the program with `Ctrl+C` and then run the following command:
@@ -933,6 +931,279 @@ To stop the robot, you can terminate the program with `Ctrl+C` and then run the 
 ```bash
 ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
 ```
+
+
+### <a name="howtocreateasrvmessage"></a> 4.6 Create a Command.srv message
+
+1. Create a new crate named `rust_msgs`
+```bash
+cd ~/ros2_rust_workshop/ros_ws/src
+cargo new rust_msgs
+```
+
+2. Delete the file `Cargo.toml`
+```bash
+cd ~/ros2_rust_workshop/ros_ws/src/rust_msgs
+rm -r Cargo.toml
+```
+
+3. Create a `srv` folder and a `Command.srv` file
+
+```bash
+cd ~/ros2_rust_workshop/ros_ws/src/rust_msgs
+mkdir srv
+cd srv
+touch Command.srv
+```
+4. Copy the following message inside `~/ros2_rust_workshop/ros_ws/src/rust_msgs/Command.srv`
+
+```txt
+# Command
+
+int32 STOP = 0
+int32 START = 1
+
+int32 command
+
+---
+bool success
+string message
+```
+5. Create a `CMakeLists.txt` file inside `~/ros2_rust_workshop/ros_ws/src/rust_msgs` and copy the following code:
+
+```cmake
+cmake_minimum_required(VERSION 3.5)
+
+project(rust_msgs)
+
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+find_package(ament_cmake REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
+set(srv_files
+  "srv/Command.srv"
+)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  ${srv_files}
+)
+
+ament_export_dependencies(rosidl_default_runtime)
+
+ament_package()
+```
+6. Create a `package.xml` inside  `~/ros2_rust_workshop/ros_ws/src/rust_msgs` and add `ament`, `rosidl_default_generators`, `rosidl_default_runtime` and `rosidl_interface_packages` dependencies respectively:
+```xml
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rust_msgs</name>
+  <version>0.4.1</version>
+  <description>A package containing some example message definitions.</description>
+  <maintainer email="nnmmgit@gmail.com">Nikolai Morin</maintainer>
+  <license>Apache License 2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+
+  <exec_depend>rosidl_default_runtime</exec_depend>
+
+  <test_depend>ament_lint_common</test_depend>
+
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
+```
+5. Build and source:
+
+```bash
+cd ~/ros2_rust_workshop/ros_ws
+colcon build --packages-select rust_msgs
+source install/setup.sh
+```
+6. Verify with:
+```bash
+ros2 interface show rust_msgs/srv/Command
+```
+Output: 
+```bash
+# Command
+
+int32 STOP = 0
+int32 START = 1
+
+int32 command
+
+---
+bool success
+string message
+```
+
+
+### <a name="howtocreateaservice"></a> 4.7 How to create a Service:
+
+#### 4.7.1 How to create a Service Server:
+
+1. Create a file in  `~/ros2_rust_workshop/ros_ws/src/rust_apps/src` called `cmd_service_server.rs`:
+
+```bash
+cd ~/ros2_rust_workshop/ros_ws/src/rust_apps/src
+touch cmd_service_server.rs
+```
+
+2. Paste the following code in  `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_server.rs`
+
+```rust
+use std::env;
+use anyhow::{Error, Result};
+use std::sync::Arc;
+use geometry_msgs::msg::{Twist, Vector3}; // Simplify imports for better clarity
+
+// Command constants for better readability and to avoid magic numbers
+const STOP: i32 = 0;
+const START: i32 = 1;
+
+/// Handles incoming service requests to control the robot
+///
+/// # Arguments
+/// * `_request_header` - Metadata for the request (not used here but required by ROS2 service definition).
+/// * `request` - The service request containing the command (STOP or START).
+/// * `publisher` - A shared publisher to send velocity commands to the robot.
+///
+/// # Returns
+/// A response indicating success or failure of the command execution.
+fn handle_service(
+    _request_header: &rclrs::rmw_request_id_t,
+    request: rust_msgs::srv::Command_Request,
+    publisher: Arc<rclrs::Publisher<Twist>>,
+) -> rust_msgs::srv::Command_Response {
+    // Initialize a default Twist message with zero velocities
+    let mut twist_msg = Twist {
+        linear: Vector3 { x: 0.0, y: 0.0, z: 0.0 },
+        angular: Vector3 { x: 0.0, y: 0.0, z: 0.0 },
+    };
+
+    match request.command {
+        STOP => {
+            // Publish a stop command (zero velocities)
+            if let Err(err) = publisher.publish(&twist_msg) {
+                eprintln!("Failed to publish STOP command: {}", err);
+                return rust_msgs::srv::Command_Response {
+                    message: "Failed to stop robot".to_string(),
+                    success: false,
+                };
+            }
+            rust_msgs::srv::Command_Response {
+                message: "Stopping Robot".to_string(),
+                success: true,
+            }
+        }
+        START => {
+            // Update the Twist message to move forward and rotate slightly
+            twist_msg.linear.x = 1.0; // Move forward
+            twist_msg.angular.z = 0.1; // Slight rotation
+
+            // Publish the start command
+            if let Err(err) = publisher.publish(&twist_msg) {
+                eprintln!("Failed to publish START command: {}", err);
+                return rust_msgs::srv::Command_Response {
+                    message: "Failed to start robot".to_string(),
+                    success: false,
+                };
+            }
+            rust_msgs::srv::Command_Response {
+                message: "Starting Robot".to_string(),
+                success: true,
+            }
+        }
+        _ => {
+            // Handle invalid commands
+            rust_msgs::srv::Command_Response {
+                message: "Invalid command".to_string(),
+                success: false,
+            }
+        }
+    }
+}
+
+fn main() -> Result<(), Error> {
+    // Initialize the ROS2 context
+    let context = rclrs::Context::new(env::args())?;
+
+    // Create a new ROS2 node
+    let node = rclrs::create_node(&context, "cmd_service_server")?;
+
+    // Create a publisher for the `cmd_vel` topic
+    let cmd_vel_publisher = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEFAULT)?;
+
+    // Create a service for handling robot commands
+    let _server = node.create_service::<rust_msgs::srv::Command, _>("command", move |req_header, request| {
+        // Use a closure to pass the publisher to the service handler
+        handle_service(req_header, request, cmd_vel_publisher.clone())
+    })?;
+
+    println!("Starting server. Waiting for requests...");
+
+    // Spin the node to process incoming service requests
+    rclrs::spin(node).map_err(|err| err.into())
+}
+```
+
+3. Add a new executable in `~/ros2_rust_workshop/ros_ws/src/rust_apps/Cargo.toml`
+
+```toml
+[[bin]]
+name = "cmd_service_server"
+path = "src/cmd_service_server.rs"
+```
+4. Using the `terminal #2` Compile latest changes and execute the server:
+
+```bash
+colcon build --packages-select rust_apps
+source install/setup.bash
+ros2 run rust_apps cmd_service_server
+```
+
+5. Open a new terminal and make client requests running the following commands:
+
+5.1 GO2 robot will start moving after sending this request:
+
+```bash
+ros2 service call /command rust_msgs/srv/Command "{command: 1}"
+```
+Output:
+```
+requester: making request: rust_msgs.srv.Command_Request(command=1)
+
+response:
+rust_msgs.srv.Command_Response(success=True, message='Starting Robot')
+```
+
+5.2 GO2 robot will stop moving after sending request:
+
+```bash
+ros2 service call /command rust_msgs/srv/Command "{command: 0}"
+```
+Output:
+```
+requester: making request: rust_msgs.srv.Command_Request(command=0)
+
+response:
+rust_msgs.srv.Command_Response(success=True, message='Stopping Robot')
+```
+
+
+
 
 ## 5. Future work
 
