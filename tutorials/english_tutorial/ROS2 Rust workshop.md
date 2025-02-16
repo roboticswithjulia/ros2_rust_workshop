@@ -55,6 +55,10 @@ colcon build
 ros2 launch go2_config gazebo_velodyne.launch.py world:=$(ros2 pkg prefix go2_config)/share/go2_config/worlds/outdoor.world
 ```
 
+> [!WARNING]  
+> **_NOTE:_**  If you are using **Ubuntu 24.04** you might encounter issues when opening Gazebo. To resolve this, execute the following command in the terminal: `export DISPLAY=:1` and try to launmch again the previous command.
+
+
 <div align="center">
     <img src="../images/outdoor_simulation.png" width="900" alt="Rust diagram">
 </div>
@@ -702,7 +706,7 @@ Editor: `rust_apps/package.xml`
   <version>0.0.0</version>
   <description>ROS2 Rust main package</description>
   <maintainer email="user@gmail.com">user</maintainer>
-  <license>MIT</license>
+  <license>TBD</license>
 
   <depend>rclrs</depend>
   <depend>sensor_msgs</depend>  
@@ -921,9 +925,9 @@ ros2 run rust_apps obstacle_avoidance_node
 ```
 
 
-<!-- <div align="center">
+<div align="center">
     <img src="../videos/obstacle_avoidance.gif" width="800" alt="obstacle avoidance">
-</div> -->
+</div>
 
 
 To stop the robot, you can terminate the program with `Ctrl+C` and then run the following command:
@@ -1007,8 +1011,8 @@ ament_package()
   <name>rust_msgs</name>
   <version>0.4.1</version>
   <description>A package containing some example message definitions.</description>
-  <maintainer email="nnmmgit@gmail.com">Nikolai Morin</maintainer>
-  <license>Apache License 2.0</license>
+  <maintainer email="user@gmail.com">user</maintainer>
+  <license>TBD</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>rosidl_default_generators</buildtool_depend>
@@ -1174,6 +1178,7 @@ path = "src/cmd_service_server.rs"
 4. Using the `terminal #2` Compile latest changes and execute the server:
 
 ```bash
+cd ~/ros2_rust_workshop/ros_ws
 colcon build --packages-select rust_apps
 source install/setup.bash
 ros2 run rust_apps cmd_service_server
@@ -1181,9 +1186,11 @@ ros2 run rust_apps cmd_service_server
 
 5. Open a new terminal and make client requests running the following commands:
 
-5.1 GO2 robot will start moving after sending this request:
+5.1 GO2 robot will start moving after sending the following command request:
 
 ```bash
+cd ~/ros2_rust_workshop/ros_ws
+source install/setup.sh
 ros2 service call /command rust_msgs/srv/Command "{command: 1}"
 ```
 Output:
@@ -1194,7 +1201,7 @@ response:
 rust_msgs.srv.Command_Response(success=True, message='Starting Robot')
 ```
 
-5.2 GO2 robot will stop moving after sending request:
+5.2 GO2 robot will stop moving after sending the following command request:
 
 ```bash
 ros2 service call /command rust_msgs/srv/Command "{command: 0}"
@@ -1206,6 +1213,11 @@ requester: making request: rust_msgs.srv.Command_Request(command=0)
 response:
 rust_msgs.srv.Command_Response(success=True, message='Stopping Robot')
 ```
+
+5.3 Stop the service server:
+
+Write `CTRL+C` in `terminal #2`
+
 
 #### 4.7.2 How to create a Service Client:
 
@@ -1309,6 +1321,7 @@ path = "src/cmd_service_client_stop.rs"
 ```
 5. Using the `terminal #2` execute the server:
 ```bash
+cd ~/ros2_rust_workshop/ros_ws
 colcon build --packages-select rust_apps
 source install/setup.bash
 ros2 run rust_apps cmd_service_server
