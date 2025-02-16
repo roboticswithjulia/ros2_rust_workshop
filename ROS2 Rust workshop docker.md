@@ -25,7 +25,7 @@
 ```
 Note: It will download a lot of things, it may take a while in a slow connection. It took about 3min in my moderate machine with 100mb internet connection.
 
-6. Open the docker container using the **docker** vscode extension. Double click in the following icon:   <img src="./images/docker_extension.png" width="50" title="Docker extension"> 
+6. Open the docker container using the **docker** vscode extension. Double click in the following icon:   <img src="./tutorials/images/docker_extension.png" width="50" title="Docker extension"> 
    
     <img src="./tutorials/images/ros2_rust_dev_imagen_encendida.png" width="400" title="imagen encendida">
 7. Right button to the container **ros2_rust_dev:latest** -> **Attach Visual Studio Code**. A new vscode IDE will be opened, it is important to close the old one. 
