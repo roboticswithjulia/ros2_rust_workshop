@@ -24,7 +24,7 @@ Next time you open the project, you can just click on 'Open in DevContainer' and
 Build the workspace, about 3min30s in my moderate machine.
 
 ```bash
-cd ~/ros2_rust_workshop/ros_ws/
+cd ~/ros2_rust_workshop/ros_ws
 sudo apt-get update
 rosdep update
 rosdep install --from-paths src --ignore-src -r -y
@@ -36,7 +36,7 @@ colcon build
 
 ```bash
 source install/setup.bash
-ros2 launch champ_config gazebo.launch.py
+ros2 launch go2_config gazebo_velodyne.launch.py world:=$(ros2 pkg prefix go2_config)/share/go2_config/worlds/outdoor.world
 ```
 
 # Troubleshooting
