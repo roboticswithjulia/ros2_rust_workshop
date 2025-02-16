@@ -2,7 +2,6 @@
 ## Tutorials available:
 
 - Tutorial in **English** can be found [here](./tutorials/english_tutorial/ROS2%20Rust%20workshop.md).
-</br>
 - Tutorial in **Spanish** can be found [here](./tutorials/spanish_tutorial/ROS2%20Rust%20workshop.md).
 
 <div align="center">
