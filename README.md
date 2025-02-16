@@ -16,12 +16,9 @@
 
 > [!IMPORTANT]
 > Important: Set up your work environment before the workshop:
-
-There are two options available:
-
-`[Option A]`: Work with devcontainers - Instructions [here](./ROS2%20Rust%20workshop%20devcontainer.md)
-
-`[Option B]`: Work with docker - Instructions here [here](./ROS2%20Rust%20workshop%20docker.md)
+> There are two options available:
+> `[Option A]`: Work with devcontainers - Instructions [here](./ROS2%20Rust%20workshop%20devcontainer.md)
+> `[Option B]`: Work with docker - Instructions here [here](./ROS2%20Rust%20workshop%20docker.md)
 
 
 
