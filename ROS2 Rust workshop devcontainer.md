@@ -4,7 +4,7 @@ Install the [DevContainer extension in VSCode](https://marketplace.visualstudio.
 
 Click on 'Open in DevContainer' in the popup. Check what is going on in the background by clicking 'Show log'.
 
-![images/reopen_in_container.png](images/reopen_in_container.png)
+![images/reopen_in_container.png](./tutorials/images/reopen_in_container.png)
 
 If you missed the popup, you can go to `View` > `Command Palette` > `Dev Containers: ReOpen in Container`.
 
@@ -18,13 +18,12 @@ Everything you do will be saved in the folder of the project (`your_path/ros2_ru
 Next time you open the project, you can just click on 'Open in DevContainer' and it will open what you built before. If you have any issues, go to `View` > `Command Palette` > `Dev Containers: Rebuild Container`.
 
 
-
 # Build
 
 Build the workspace, about 3min30s in my moderate machine.
 
 ```bash
-cd ~/ros2_rust_workshop/ros_ws/
+cd ~/ros2_rust_workshop/ros_ws
 sudo apt-get update
 rosdep update
 rosdep install --from-paths src --ignore-src -r -y
@@ -36,7 +35,7 @@ colcon build
 
 ```bash
 source install/setup.bash
-ros2 launch champ_config gazebo.launch.py
+ros2 launch go2_config gazebo_velodyne.launch.py world:=$(ros2 pkg prefix go2_config)/share/go2_config/worlds/outdoor.world
 ```
 
 # Troubleshooting

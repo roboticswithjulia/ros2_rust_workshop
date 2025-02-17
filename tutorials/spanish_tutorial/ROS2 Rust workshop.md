@@ -1,51 +1,54 @@
-# ROS2 Rust Workshop: Developing Real Robotics Applications with ROS2 and Rust
+# Workshop ROS2 Rust: Desarrollo de Aplicaciones Reales en Robótica con ROS2 y Rust
 
 <p style="text-align: center">
   <img src="../images/ROS2_Rust.png" width="700" title="ROS2 RUST logo">
 </p>
 
-Rust is a language that allows creating efficient, high-quality software.
+Rust es un lenguaje que permite crear un software de calidad y eficiente.
 
-ROS2, the robotics operating system framework, now offers the possibility to be used with Rust. With this project, you'll learn how to develop nodes in Rust for your real robotics applications.
+ROS2, el marco de trabajo para sistemas operativos robóticos, ahora ofrece la posibilidad de ser utilizado con Rust. Con este proyecto, aprenderás a desarrollar nodos en Rust para tus aplicaciones robóticas reales.
 
-In this workshop, you'll learn the following:
+En este workshop, aprenderás lo siguiente: 
 
-* [1. What is / Why Rust?](#whatisrust)
-* [2. How to install Rust with ROS2](#howtoinstallrust)
-* [3. How to run the robot simulation](#setupworkspace)
-* [4. How to interact with a robot using ROS2 and Rust](#movearobotwithROS2)
-* [4.1 How to create a ROS package in Rust](#createarustrospackage)
-* [4.2 Basic Rust programming tips](#basicrustprogrammingtips)
-* [4.3 How to create a Subscriber](#howtocreateasubscribertoscantopicinrust)
-* [4.4 How to create a Publisher](#howtocreateapublishertocmdvelinrust)
-* [4.5 How to create a Subscriber and a Publisher using the same node](#howtocreatasubandpub)
+* [1. ¿Qué es / Por qué Rust?](#whatisrust)
+* [2. Cómo instalar Rust con ROS2](#howtoinstallrust)
+* [3. Ejecutar la simulación](#setupworkspace)
+* [4. Cómo mover un robot con ROS2 y Rust](#movearobotwithROS2)
+* [4.1 Cómo crear un paquete de ROS en Rust](#createarustrospackage)
+* [4.2 Consejos básicos de programación en Rust](#basicrustprogrammingtips)
+* [4.3 Cómo crear un *subscriber* en Rust](#howtocreateasubscribertoscantopicinrust)
+* [4.4 Cómo crear un *publisher* en Rust](#howtocreateapublishertocmdvelinrust)
+* [4.5 Cómo crear un *subscriber* y un *publisher* en el mismo nodo](#howtocreatasubandpub)
 * [4.6 How to create a Service message](#howtocreateasrvmessage)
 * [4.7 How to create a Service](#howtocreateaservice)
-* [5. Future work](#futurework)
+* [5. Trabajo futuro](#futurework)
 
-## <a name="whatisrust"></a> 1. What is / Why Rust?
+## <a name="whatisrust"></a> 1. ¿Qué es / Por qué Rust?
 
-Rust is a systems programming language designed to optimize performance, security, and concurrency. It was originally developed by Mozilla and is now maintained by the Rust Foundation, which includes open-source components.
+Rust es un lenguaje de programación de sistemas diseñado para optimizar el rendimiento, la seguridad y la concurrencia. Fue desarrollado originalmente por Mozilla y ahora es mantenido por la Fundación Rust, que incluye partes de código abierto.
 
 <div align="center">
     <img src="../images/Rust_Foundation_logo.png" width="300" alt="The Rust foundation">
 </div>
 
-Here are some key features and aspects of Rust:
+En la siguiente imagen se encuentran algunas características y aspectos clave de Rust:
 
 <div align="center">
     <img src="../images/Rust_diagram.png" width="800" alt="Rust diagram">
 </div>
 
-## <a name="howtoinstallrust"></a> 2. How to Install Rust with ROS2
+## <a name="howtoinstallrust"></a> 2. Cómo instalar Rust con ROS2:
 
-ROS2 packages cannot be located by default within Rust packages. The only way to work with it currently is to install it from source or using Docker. These resources can be found here:
+Los paquetes de ROS2 no se pueden localizar por defecto dentro de los paquetes de Rust. La única forma de trabajar con ello actualmente es instalarlo desde el código fuente o utilizando Docker. 
+Dichos recursos se pueden encontrar aquí:
 https://github.com/ros2-rust/ros2_rust.
 
-## <a name="setupworkspace"></a> 3. How to run the robot simulation
 
-1. Run the simulation in _Gazebo_ in `Terminal #1`
-   >The simulation may take time to load on first launch. Wait for it to open completely, then press `Ctrl+C` to close it.
+## <a name="setupworkspace"></a> 3. Cómo ejecutar la simulación del robot
+
+1. Ejecutar la simulación en _Gazebo_ en la `Terminal #1`.
+> Puede que tarde un poco la primera vez que se ejhecute, esperar a que se abra inicie simulación.
+
 
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
@@ -56,7 +59,7 @@ ros2 launch go2_config gazebo_velodyne.launch.py world:=$(ros2 pkg prefix go2_co
 ```
 
 > [!WARNING]  
-> **_NOTE:_**  If you are using **Ubuntu 24.04** you might encounter issues when opening Gazebo. To resolve this, execute the following command in the terminal: `export DISPLAY=:1` and try to launch again the previous command.
+> **_NOTE:_**  Si se esta usando **Ubuntu 24.04** y devcontainers, puede que Gazebo no se inicie. Para resolver esto ejecuta el siguiente commando en la terminal: `export DISPLAY=:1` antes de volver a iniciar la simulación y ejecute los comandos anteriores.
 
 
 <div align="center">
@@ -64,7 +67,7 @@ ros2 launch go2_config gazebo_velodyne.launch.py world:=$(ros2 pkg prefix go2_co
 </div>
 
 
-1. See what *topics* are available. Open a terminal, `terminal #2` and run:
+1. Ver que *tópicos* hay disponibles. Abre la terminal, `terminal #2` y ejecute:
 
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
@@ -72,7 +75,7 @@ source /opt/ros/humble/setup.sh
 . install/setup.sh 
 ros2 topic list
 ```
-`terminal #2` Output:
+Salida `terminal #2`:
 
 ```bash
 /base_to_footprint_pose
@@ -108,57 +111,58 @@ ros2 topic list
 /velodyne_points
 ```
 
-## <a name="movearobotwithROS2"></a> 4. How to interact with a robot using ROS2 and Rust
+## <a name="movearobotwithROS2"></a> 4. Cómo mover un robot con ROS2 y Rust
 
-### <a name="createarustrospackage"></a> 4.1 How to Create a ROS Package in Rust
+### <a name="createarustrospackage"></a> 4.1 Cómo crear un paquete de ROS en Rust
 
-**Cargo** is the package manager and build tool for Rust. It facilitates dependency management, project building, and testing. Through Cargo, you can compile your code, download and update third-party packages (called _"crates"_), and manage your project configurations.
+**Cargo** es el gestor de paquetes y herramienta de construcción para Rust. Facilita la gestión de dependencias, la construcción de proyectos y la ejecución de pruebas. A través de Cargo, puedes compilar tu código, descargar y actualizar paquetes de terceros (llamados _"crates"_), y administrar configuraciones de tu proyecto.
 
-**Crates** is the name used to refer to Rust packages. A _crate_ is a distributable unit of code that can be a library or an executable. Crates are managed through Cargo, Rust's package manager, which facilitates their publication, installation, and updating. You can find currently available _crates_ on the [Crates.io website](https://crates.io/).
+**Crates** es el nombre que se utiliza para referirse a los paquetes de Rust. Un _crate_ es una unidad de código distribuible que puede ser una biblioteca o un ejecutable. Los crates se gestionan a través de Cargo, el gestor de paquetes de Rust, que facilita su publicación, instalación y actualización. En la siguiente página podéis encontrar los _crates_ actualmente disponibles [Crates.io website](https://crates.io/).
 
-There are two main types of crates:
+Existen dos tipos principales de crates:
 
-- **Library crates**: Contain code that can be used by other crates. They don't have a main entry point.
-- **Binary crates**: Contain a main entry point (main) that can be run as a standalone program.
+- **Crates de biblioteca**: Contienen código que puede ser utilizado por otros crates. No tienen un punto de entrada principal.
+- **Crates binarios**: Contienen un punto de entrada principal (main), que puede ser ejecutado como un programa independiente.
 
-Crates are defined in the *Cargo.toml* file, where their dependencies and configurations are specified.
+Los crates se definen en el archivo *Cargo.toml*, donde se especifican sus dependencias y configuraciones.
 
 <div align="center">
     <img src="../images/rclrs_crates.png" width="700" alt="crate example">
 </div>
 
 
-#### To create a new package:
+#### Para crear un nuevo paquete:
 
 ```bash
 $ cargo new <pkg_name>
 ```
 
-Execute in `terminal #2`:
+Ejecuta en la `terminal #2`:
 ```bash
 cd ~/ros2_rust_workshop/ros_ws/src
 cargo new rust_apps
 ```
 
-Each Cargo package in ROS2 will have the following file and folder structure:
 
-- `src` folder: Contains Rust source files.
-- `Cargo.toml`: File where you can define dependencies (_crates_), metadata, and some compiler configurations.
-- `Cargo.lock`: Contains exact information about your dependencies. It is maintained by Cargo and should not be edited manually.
+Cada paquete de Cargo en ROS2 tendrá la siguiente estructura de archivos y carpetas:
 
-These are essential, so remember the following:
+- Carpeta `src`: Contiene los archivos fuente (Rust, CPP, Python).
+- `Cargo.toml`: Archivo dónde puedes definir las dependencias (_crates_), metadatos y algunas configuraciones del compilador.
+- `Cargo.lock`: Contiene información exacta sobre tus dependencias. Es mantenido por Cargo y no debe ser editado manualmente.
 
-- Every ROS2 program you want to run is organized in a package.
-- Every ROS2 program you create must be organized in a package.
-- Packages are the main organization system for ROS2 programs.
+Son esenciales, así que recuerda lo siguiente:
 
-Execute in  `Terminal #2`:
+- Cada programa ROS2 que quieras ejecutar está organizado en un paquete.
+- Cada programa ROS2 que crees debe estar organizado en un paquete.
+- Los paquetes son el sistema principal de organización para los programas de ROS2.
+
+Ejecuta en la `Terminal #2`:
 ```bash
 cd ~/ros2_rust_workshop/ros_ws/src/rust_apps
 tree -c
 ```
 
-`Terminal #2` output:
+Salida de la `Terminal #2`:
 ```bash
 .
 |-- Cargo.toml
@@ -168,11 +172,11 @@ tree -c
 1 directory, 2 files
 ```
 
-For ROS to recognize that this is a ROS package, it's necessary to add a **package.xml** file. This file contains metadata information about the package, such as its name, version, author, and necessary dependencies.
+Para que ROS reconozca que se trata de un paquete ROS, es necesario agregar un archivo **package.xml**. Este archivo contiene la información de metadatos sobre el paquete, como su nombre, versión, autor, y las dependencias necesarias.
 
-1. Create a new a **package.xml** file inside the _rust_apps_ directory `~/ros2_rust_workshop/ros_ws/src/rust_apps/package.xml`.
+1. Crea un nuevo fichero **package.xml** dentro del directorio _rust_apps_ `~/ros2_rust_workshop/ros_ws/src/rust_apps/package.xml`.
 
-2. Copy the following code inside `rust_apps/package.xml`.
+2. Copia el siguiente código en el siguiente fichero `rust_apps/package.xml`.
 ```xml
 <package format="3">
   <name>rust_apps</name>
@@ -189,28 +193,29 @@ For ROS to recognize that this is a ROS package, it's necessary to add a **packa
 </package>
 ```
 
-The main Rust shortcuts:
+Los principales atajos de Rust:
 
 - `cargo build`
 - `cargo run`
 - `cargo install <name of the package>`
 
-> We won't use these commands at all since we're using ROS2, so we'll use ROS2 commands instead.
+> No vamos a usar estos comandos en absoluto ya que estamos usando ROS2, así que utilizaremos los comandos de ROS2.
 
-For large projects, you might not want to compile all packages immediately. Instead, you can follow these approaches:
+Para proyectos grandes, es posible que no desees compilar todos los paquetes de inmediato. En su lugar, puedes seguir los siguientes enfoques:
 
-Execute in `Terminal #2`:
+Ejecute en la `Terminal #2`:
+
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
 colcon build --packages-select rust_apps
 source install/setup.sh
 ```
 
-Now we have the *crate* (ROS2 package) ready to implement a ROS2 node using Rust.
+Ahora tenemos el *crate* (paquete de ROS2) preparado para implementar un ROS2 node usando Rust.
 
-### <a name="basicrustprogrammingtips"></a> 4.2 Basic Rust Programming Tips
+### <a name="basicrustprogrammingtips"></a> 4.2 Consejos Básicos de Programación en Rust
 
-#### 4.2.1 Functions
+#### 4.2.1 Funciones
 
 ```rust
 fn <function_name>(variable:type){} -> <return_type>
@@ -220,23 +225,23 @@ fn <function_name>(variable:type){} -> <return_type>
 fn main() -> Result<(), Error> {}
 ```
 
-#### 4.2.2 Mutability
+#### 4.2.2 Mutabilidad
 
-To create a new variable and assign it a value, use **let**. If the variable is mutable (meaning its value can change), use **mut**.
+Para crear una nueva variable y asignarle un valor, se utiliza **let**. Si la variable es mutable (es decir, su valor puede cambiar), se debe utilizar **mut**. 
 
 ```rust
 let mut message = std_msgs::msg::String::default();
 ```
 
-#### 4.2.3 Steps to Create a ROS2 Node in Rust
+#### 4.2.3 Pasos para Crear un Nodo de ROS2 en Rust
 
-##### 4.2.3.1 Create the context, shared state between nodes and similar entities.
+##### 4.2.3.1 Crear el contexto, el estado compartido entre nodos y entidades similares.
 
 ```rust
 let context = rclrs::Context::new(env::args())?;
 ```
 
-##### 4.2.3.2 Create the node.
+##### 4.2.3.2 Crear el nodo.
 
 ```rust
 pub fn create_node(
@@ -249,7 +254,7 @@ pub fn create_node(
 let node = rclrs::create_node(&context, "<node_name>")?;
 ```
 
-##### 4.2.3.3 Create a subscriber.
+##### 4.2.3.3 Crear un subscriber.
 
 ```rust
 pub fn create_subscription<T, Args>(
@@ -273,7 +278,7 @@ let _subscription = node.create_subscription::<PointCloud2, _>(
 )?;
 ```
 
-##### 4.2.3.4 Create a publisher.
+##### 4.2.3.4 Crear un publisher.
 
 ```rust
 pub fn create_publisher<T>(
@@ -290,7 +295,7 @@ let publisher = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEF
 publisher.publish(&cmd_vel_message)?;
 ```
 
-##### 4.2.3.5 Which QoSProfile (Quality of Service Profile) does Rust offers?
+##### 4.2.3.5 Qué QoSProfile (Perfil de Calidad de Servicio) tenemos implementado?.
 
 - QOS_PROFILE_CLOCK
 - QOS_PROFILE_DEFAULT
@@ -300,9 +305,9 @@ publisher.publish(&cmd_vel_message)?;
 - QOS_PROFILE_SERVICES_DEFAULT
 - QOS_PROFILE_SYSTEM_DEFAULT
 
-Since the topic of QoS (Quality of Service) is complex and outside the scope of the current learning session, we'll use the default QoS profile, QOS_PROFILE_DEFAULT. If you want to learn more about QoS and how to customize it for your specific needs, I recommend checking the official ROS2 page [QoS](https://docs.ros.org/en/rolling/Concepts/Intermediate/About-Quality-of-Service-Settings.html).
+Dado que el tema del QoS (Quality of Service) es complejo y está fuera del alcance de la sesión de aprendizaje actual, utilizaremos el perfil de QoS predeterminado, QOS_PROFILE_DEFAULT. Si deseas aprender más sobre QoS y cómo personalizarlo para tus necesidades específicas, te recomiendo que consultes la página oficial de ROS2 [QoS](https://docs.ros.org/en/rolling/Concepts/Intermediate/About-Quality-of-Service-Settings.html).
 
-##### 4.2.3.6 ROS spin - use outside a loop.
+##### 4.2.3.6 ROS spin - usar fuera de un bucle.
 
 ```rust
 pub fn spin(node: Arc<Node>) -> Result<(), RclrsError>
@@ -312,7 +317,7 @@ pub fn spin(node: Arc<Node>) -> Result<(), RclrsError>
 rclrs::spin(node).map_err(|err| err.into())
 ```
 
-##### 4.2.3.7 ROS spin_once - use inside a loop.
+##### 4.2.3.7 ROS spin_once - usar dentro de un bucle.
 
 ```rust
 pub fn spin_once(
@@ -325,7 +330,7 @@ pub fn spin_once(
 rclrs::spin_once(node.clone(), Some(std::time::Duration::from_millis(500)));
 ```
 
-#### 4.2.4 Creating and Using Structures and Methods
+#### 4.2.4 Creación y uso de estructuras y métodos
 
 ```rust
 struct Rectangle {
@@ -341,20 +346,21 @@ impl Rectangle {
 
 ```
 
-### <a name="howtocreateasubscribertoscantopicinrust"></a> 4.3 How to Create a Subscriber
+### <a name="howtocreateasubscribertoscantopicinrust"></a> 4.3 Cómo crear un suscriptor
 
-#### 4.3.1 Study the Message Contained in the Topic
+#### 4.3.1 Estudio del mensaje que contiene el tópico
 
-Let's see how to create a subscriber to the `/velodyne_points` topic using Rust.
+Vamos a ver cómo realizar un subscriptor al _tópico_ `/velodyne_points` utilizando Rust. 
 
-1. First, let's subscribe to the topic to see what it contains.
+1. En primer vamos a subscribirnos al tópico para ver lo que contiene. 
 
-Execute in `Terminal #2`:
+Ejecuta en la `Terminal #2`:
+
 ```bash
 source /opt/ros/humble/setup.sh
 ros2 topic echo /velodyne_points
 ```
-`Terminal #2` output:
+Salida `Terminal #2`:
 ```bash
 header:
   stamp:
@@ -400,24 +406,24 @@ data:
 ...
 ```
 
-2. To create a subscriber using Rust, we need to know what type of message and attributes the `/velodyne_points` topic contains.
+2. Para poder crear un subscriptor utilizando Rust, tenemos que saber qué tipo de mensaje y atributos contiene el tópico `/velodyne_points` .
 
-2.1 Execute in `Terminal #2`:
+2.1 Ejecuta en la `Terminal #2`:
 ```bash
 ros2 topic info /velodyne_points
 ```
-`Terminal #2` output:
+Salida `Terminal #2`:
 ```bash
 Type: sensor_msgs/msg/PointCloud2
 Publisher count: 1
 Subscription count: 0
 ```
 
-2.2 Execute in `Terminal #2`:
+2.2 Ejecuta en la `Terminal #2`:
 ```bash
 ros2 interface show sensor_msgs/msg/PointCloud2
 ```
-`Terminal #2` output:
+Salida `Terminal #2`:
 ```bash
 # Time of sensor data acquisition, and the coordinate frame ID (for 3d points).
 std_msgs/Header header
@@ -455,18 +461,19 @@ bool is_dense        # True if there are no invalid points
 
 ```
 
-#### 4.3.2 Code Implementation
+#### 4.3.2 Implementación del código
 
-1. Change the file name `main.rs -> scan_subscriber.rs`.
+1. Cambia el nombre del fichero `main.rs -> scan_subscriber.rs`.
 
-Execute in `Terminal #2`:
+Ejecuta en la `Terminal #2`:
+
 ```bash
 cd ~/ros2_rust_workshop/ros_ws/src/rust_apps/src
 mv main.rs scan_subscriber.rs
 ```
 
 
-2. Open in code editor `rust_apps/src/scan_subscriber.rs`
+2. Abrir en el editor de código: `rust_apps/src/scan_subscriber.rs`
 
 ```Rust
 use std::{
@@ -531,7 +538,7 @@ fn main() -> Result<(), Error> {
 }
 
 ```
-3. Add ROS2 dependencies manually: Add **sensor_msgs** in the **package.xml** file.
+3. Añadir las dependencias de ROS2 manualmente: Añadir **sensor_msgs** en el archivo **package.xml**.
 
 ```xml
   <package format="3">
@@ -549,8 +556,7 @@ fn main() -> Result<(), Error> {
 </package>
 ```
 
-4. Add dependencies with other _crates_ and link the file with the ROS2 node in `rust_apps/cargo.toml`.
-
+4. Añadir dependencias con otros _crates_ y enlazar el archivo con el nodo de ROS2 en el fichero `rust_apps/cargo.toml`.
 
 ```toml
 [package]
@@ -568,26 +574,27 @@ name = "scan_subscriber_node"
 path = "src/scan_subscriber.rs"
 ```
 
-6. Add dependencies `automatically`:
+6. Añadir las dependencias de forma automática:
 
-Execute in `Terminal #2`:
+Ejecuta en la `Terminal #2`:
 ```bash
 cd ~/ros2_rust_workshop/ros_ws/src/rust_apps
 cargo add anyhow
 cargo add rclrs
 ```
 
-7. Build the node:
+7. Construir el nodo:
 
-Execute in `Terminal #2`:
+Ejecuta en la `Terminal #2`:
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
 colcon build --packages-select rust_apps
 ```
 
-#### 4.3.3 Code Execution
+#### 4.3.3 Ejecución del código
 
-Execute in Terminal #2:
+Ejecuta en la `Terminal #2`:
+
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
 source install/setup.sh
@@ -616,13 +623,13 @@ Obstacle detected at RIGHT: Orientation -1.51 [rad] and distance -0.87 [m]
 
 
 
-### <a name="howtocreateapublishertocmdvelinrust"></a> 4.4 How to create a Publisher
+### <a name="howtocreateapublishertocmdvelinrust"></a> 4.4 Cómo crear un cmd_vel Publisher en Rust
 
-#### 4.4.1 Code Implementation
+#### 4.4.1 Implementación del código
 
-1. Create a new file inside the Rust package *rust_apps* named *cmd_vel_publisher.rs* and paste the following code:
+1. Crea un nuevo fichero dentro del paquete de Rust *rust_apps* con el nombre *cmd_vel_publisher.rs* y pega el siguiente código:
 
-IDE: `rust_apps/src/cmd_vel_publisher.rs`
+IDE(Editor de código): `rust_apps/src/cmd_vel_publisher.rs`
 ```rust
 use std::env;
 use anyhow::{Error, Result};
@@ -666,7 +673,7 @@ fn main() -> Result<(), Error> {
 }
 ```
 
-2. Add the *geometry_msgs* dependency and add the new node called *cmd_vel_publisher* inside *Cargo.toml*:
+2. Añade la dependencia *geometry_msgs* y añade el nuevo nodo llamado *cmd_vel_publisher* dentro de *Cargo.toml*:
 
 Editor: `rust_apps/Cargo.toml`
 ```toml
@@ -717,24 +724,24 @@ Editor: `rust_apps/package.xml`
 </package>
 ```
 
-3. Build the ROS2 package:
+3. Construya el paquete de ROS2:
 
-Execute in `Terminal #2`:
+Ejecuta en la `Terminal #2`:
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
 colcon build --packages-select rust_apps
 ```
 
-#### 4.4.2 Code Execution
+#### 4.4.2 Ejecución del código
 
-Execute in `Terminal #2`:
+Ejecuta en la `Terminal #2`:
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
 source install/setup.sh
 ```
-4. Open the gazebo window and look through the robot go2 and execute the node `cmd_vel_publisher`.
+4. Abre la ventana de *gazebo* y busca al robot go2 y después executa el nodo `cmd_vel_publisher`.
 
-Execute in `Terminal #2`:
+Ejecuta en la `Terminal #2`:
 ```
 source /opt/ros/humble/setup.sh 
 ros2 run rust_apps cmd_vel_publisher_node
@@ -746,19 +753,19 @@ ros2 run rust_apps cmd_vel_publisher_node
 </div>
 
 
-To stop the robot, you can terminate the program with `Ctrl+C` and then run the following command:
+Si se quiere parar el robot, puedes terminal el programa con `Ctrl+C` y ejecutar después la siguiente línea de código:
 
 ```bash
 ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
 ```
 
-### <a name="howtocreatasubandpub"></a> 4.5 How to create a subscriber and a publisher using the same node
+### <a name="howtocreatasubandpub"></a> 4.5 Cómo crear un Subscriber y un Publisher en el mismo nodo
 
-#### 4.5.1 Code Implementation
+#### 4.5.1 Implementación del código
 
-1. Real projects go beyond simple publish and subscribe models. Let's collaborate to create a Rust structure that includes both a publisher and a subscriber. This structure will allow the robot to navigate autonomously through the simulation environment, avoiding collisions independently.
+1. Los proyectos reales van más allá de los modelos de publicación y suscripción simples. Colaboremos para crear una estructura de Rust que incluya tanto un publicador como un suscriptor. Esta estructura permitirá que el robot navegue de forma autónoma por el entorno de simulación, evitando colisiones de forma independiente.
 
-Code editor: `rust_apps/src/obstacle_avoidance.rs`
+Editor de código: `rust_apps/src/obstacle_avoidance.rs`
 
 ``` rust
 // Dependencies for ROS2, synchronization and geometry types
@@ -875,7 +882,7 @@ fn main() -> Result<(), Error> {
     Ok(())
 }
 ```
-2. Add the new executable in `Cargo.toml`
+2. Añadir el nuevo nodo ejecutable en `Cargo.toml`
 
 ```toml
 [package]
@@ -907,7 +914,7 @@ path = "src/cmd_vel_publisher.rs"
 name = "obstacle_avoidance_node"
 path = "src/obstacle_avoidance.rs"
 ```
-Execute in `Terminal #2`:
+Ejecuta en la `Terminal #2`:
 
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
@@ -915,43 +922,41 @@ colcon build --packages-select rust_apps
 ```
 
 
-#### 4.5.2 Code Execution
+#### 4.5.2 Ejecución del código
 
-Execute in `Terminal #2`:
+Ejecuta en la `Terminal #2`:
 
 ```bash
 source install/setup.sh
 ros2 run rust_apps obstacle_avoidance_node
 ```
-
-
 <div align="center">
     <img src="../videos/obstacle_avoidance.gif" width="800" alt="obstacle avoidance">
 </div>
 
 
-To stop the robot, you can terminate the program with `Ctrl+C` and then run the following command:
+Si se quiere parar el robot, puedes terminal el programa con `Ctrl+C` y ejecutar después la siguiente línea de código:
 
 ```bash
 ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
 ```
 
 
-### <a name="howtocreateasrvmessage"></a> 4.6 Create a Command.srv message
+### <a name="howtocreateasrvmessage"></a> 4.6 Cómo crear un mensaje Command.srv
 
-1. Create a new crate named `rust_msgs`
+1. Crea un nuevo crate llamado `rust_msgs`
 ```bash
 cd ~/ros2_rust_workshop/ros_ws/src
 cargo new rust_msgs
 ```
 
-2. Delete the file `Cargo.toml`
+2. Elimina el fichero `Cargo.toml`
 ```bash
 cd ~/ros2_rust_workshop/ros_ws/src/rust_msgs
 rm -r Cargo.toml
 ```
 
-3. Create a `srv` folder and a `Command.srv` file
+3. Crea una carpeta `srv` y un fichero `Command.srv`
 
 ```bash
 cd ~/ros2_rust_workshop/ros_ws/src/rust_msgs
@@ -959,7 +964,7 @@ mkdir srv
 cd srv
 touch Command.srv
 ```
-4. Copy the following message inside `~/ros2_rust_workshop/ros_ws/src/rust_msgs/Command.srv`
+4. Copia el siguiente mensaje en `~/ros2_rust_workshop/ros_ws/src/rust_msgs/Command.srv`
 
 ```txt
 # Command
@@ -973,7 +978,7 @@ int32 command
 bool success
 string message
 ```
-5. Create a `CMakeLists.txt` file inside `~/ros2_rust_workshop/ros_ws/src/rust_msgs` and copy the following code:
+5. Crea un fichero `CMakeLists.txt` dentro de `~/ros2_rust_workshop/ros_ws/src/rust_msgs` y copia el siguiente código:
 
 ```cmake
 cmake_minimum_required(VERSION 3.5)
@@ -1003,7 +1008,8 @@ ament_export_dependencies(rosidl_default_runtime)
 
 ament_package()
 ```
-6. Create a `package.xml` inside  `~/ros2_rust_workshop/ros_ws/src/rust_msgs` and add `ament`, `rosidl_default_generators`, `rosidl_default_runtime` and `rosidl_interface_packages` dependencies respectively:
+6. Crea un `package.xml` dentro de  `~/ros2_rust_workshop/ros_ws/src/rust_msgs` y añade las respectivas dependencias `ament`, `rosidl_default_generators`, `rosidl_default_runtime` y `rosidl_interface_packages`:
+
 ```xml
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
@@ -1028,18 +1034,18 @@ ament_package()
   </export>
 </package>
 ```
-5. Build and source:
+5. Compila y haz un source:
 
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
 colcon build --packages-select rust_msgs
 source install/setup.sh
 ```
-6. Verify with:
+6. Verifica que el mensaje `Command.srv` ha sido creado:
 ```bash
 ros2 interface show rust_msgs/srv/Command
 ```
-Output: 
+Salida: 
 ```bash
 # Command
 
@@ -1054,18 +1060,18 @@ string message
 ```
 
 
-### <a name="howtocreateaservice"></a> 4.7 How to create a Service:
+### <a name="howtocreateaservice"></a> 4.7 Cómo crear un Servicio:
 
-#### 4.7.1 How to create a Service Server:
+#### 4.7.1 Cómo crear un servicio servidor:
 
-1. Create a file in  `~/ros2_rust_workshop/ros_ws/src/rust_apps/src` called `cmd_service_server.rs`:
+1. Crear un fichero en  `~/ros2_rust_workshop/ros_ws/src/rust_apps/src` llamado `cmd_service_server.rs`:
 
 ```bash
 cd ~/ros2_rust_workshop/ros_ws/src/rust_apps/src
 touch cmd_service_server.rs
 ```
 
-2. Paste the following code in  `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_server.rs`
+2. Pegar el siguiente código en `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_server.rs`
 
 ```rust
 use std::env;
@@ -1163,7 +1169,7 @@ fn main() -> Result<(), Error> {
 }
 ```
 
-3. Add a new executable in `~/ros2_rust_workshop/ros_ws/src/rust_apps/Cargo.toml`
+3. Añadir un nuevo ejecutable en `~/ros2_rust_workshop/ros_ws/src/rust_apps/Cargo.toml`
 
 ```toml
 (...)
@@ -1175,7 +1181,7 @@ rust_msgs = "*"
 name = "cmd_service_server"
 path = "src/cmd_service_server.rs"
 ```
-4. Using the `terminal #2` Compile latest changes and execute the server:
+4. En la `terminal #2` compila los últimos cambios y ejecuta el servidor:
 
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
@@ -1184,16 +1190,16 @@ source install/setup.bash
 ros2 run rust_apps cmd_service_server
 ```
 
-5. Open a new terminal and make client requests running the following commands:
+5. Abrir una nueva terminal y realice solicitudes de cliente ejecutando los siguientes comandos: 
 
-5.1 GO2 robot will start moving after sending the following command request:
+5.1. El robot GO2 empiezará a moverse después de ejecutar el siguiente comando:
 
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
 source install/setup.sh
 ros2 service call /command rust_msgs/srv/Command "{command: 1}"
 ```
-Output:
+Salida:
 ```
 requester: making request: rust_msgs.srv.Command_Request(command=1)
 
@@ -1201,12 +1207,12 @@ response:
 rust_msgs.srv.Command_Response(success=True, message='Starting Robot')
 ```
 
-5.2 GO2 robot will stop moving after sending the following command request:
+5.2 El robot GO2 dejará de moverse después de enviar la siguiente solicitud de comando:
 
 ```bash
 ros2 service call /command rust_msgs/srv/Command "{command: 0}"
 ```
-Output:
+Salida:
 ```
 requester: making request: rust_msgs.srv.Command_Request(command=0)
 
@@ -1214,14 +1220,14 @@ response:
 rust_msgs.srv.Command_Response(success=True, message='Stopping Robot')
 ```
 
-5.3 Stop the service server:
+5.3 Detener el servidor de servicio:
 
-Write `CTRL+C` in `terminal #2`
+Escribe `CTRL+C` en la `terminal #2`
 
 
-#### 4.7.2 How to create a Service Client:
+#### 4.7.2 Cómo crear un cliente de servicio:
 
-1. Create two different files inside `~/ros2_rust_workshop/ros_ws/src/rust_apps/src`
+1. Crea dos archivos diferentes en `~/ros2_rust_workshop/ros_ws/src/rust_apps/src`
 
 ```bash
 cd ~/ros2_rust_workshop/ros_ws/src/rust_apps/src
@@ -1229,7 +1235,7 @@ touch cmd_service_client_start.rs
 touch cmd_service_client_stop.rs
 
 ```
-2. Copy the following code inside `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_client_start.rs`
+2. Copia el siguiente código en `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_client_start.rs`
 ```rust
 use std::env;
 
@@ -1268,7 +1274,7 @@ fn main() -> Result<(), Error> {
 }
 ```
 
-3. Copy the following code inside `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_client_stop.rs`
+3. Copia el siguiente código en `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_client_stop.rs`
 ```rust
 use std::env;
 
@@ -1306,7 +1312,7 @@ fn main() -> Result<(), Error> {
     rclrs::spin(node).map_err(|err| err.into())
 }
 ```
-4. Add a two new executable in `~/ros2_rust_workshop/ros_ws/src/rust_apps/Cargo.toml`
+4. Agregue dos nuevos ejecutables en `~/ros2_rust_workshop/ros_ws/src/rust_apps/Cargo.toml`
 
 ```toml
 (...)
@@ -1319,47 +1325,47 @@ path = "src/cmd_service_client_start.rs"
 name = "cmd_service_client_stop"
 path = "src/cmd_service_client_stop.rs"
 ```
-5. Using the `terminal #2` execute the server:
+5. Usando la `terminal #2` ejecuta el servidor:
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
 colcon build --packages-select rust_apps
 source install/setup.bash
 ros2 run rust_apps cmd_service_server
 ```
-6. Using the `terminal #3` compile latest changes and execute the first client:
+6. Usando la `terminal #3` compila los últimos cambios y ejecuta el primer cliente:
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
 source install/setup.bash
 ros2 run rust_apps cmd_service_client_start
 ```
 
-Go2 robot should start walking.
+El robot Go2 debería empezar a caminar.
 
-7. Using the `terminal #4` compile latest changes and execute the second client:
+7. Usando la `terminal #4` compila los úlitmos cambios y ejecuta el segundo:
 ```bash
 cd ~/ros2_rust_workshop/ros_ws
 source install/setup.bash
 ros2 run rust_apps cmd_service_client_stop
 ```
-Go2 robot should stop walking.
+El robot Go2 debería dejar de caminar.
 
->You can proceed killing all the terminals with `Ctrl+C`
+>Puedes proceder a terminar con todas las terminales con `Ctrl+C`
 
 
-## 5. Future work
+## 5. Trabajo futuro
 
-Now you are prepared to create nodes in Rust. To further improve your competence, I recommend that you review the following courses and documentation:
+Ahora estás preparado para crear nodos en Rust. Para mejorar aún más tu competencia, te recomiendo que revises los siguientes cursos y documentación:
 
 ROS2 Rust:
-- [ROS2 Rust Repository](https://github.com/ros2-rust/ros2_rust)
+- [Repositorio de ROS2 Rust](https://github.com/ros2-rust/ros2_rust)
 - [ROS2 Basics in 3 Days (Rust)](https://app.theconstruct.ai/courses/168)
-- [ROS2 with Rust | ROS2 Developers Open Class - The Construct](https://youtu.be/ShCnUasOBzU?feature=shared)
-- [Build a ROS2 Node with Rust - Mike](https://www.youtube.com/watch?v=U5wHiZpNdvg)
-- [Current state of ROS2 Rust libraries - ROS discourse](https://discourse.ros.org/t/current-state-of-rust-client-libraries-which-one-to-use-ros2-client-rus2-ros2-rust-rclrust-rosrust-or-r2r/39119)
+- [ROS2 con Rust | ROS2 Developers Open Class - The Construct](https://youtu.be/ShCnUasOBzU?feature=shared)
+- [Construye un nodo de ROS2 con Rust - Mike](https://www.youtube.com/watch?v=U5wHiZpNdvg)
+- [Estado actual de las librerias de ROS2 Rust - ROS discourse](https://discourse.ros.org/t/current-state-of-rust-client-libraries-which-one-to-use-ros2-client-rus2-ros2-rust-rclrust-rosrust-or-r2r/39119)
 
-Learn Rust:
-- [The Rust Book](https://doc.rust-lang.org/book/)
-- [The 9 Best Rust Programming Courses and Books for Beginners in 2024](https://medium.com/javarevisited/7-best-rust-programming-courses-and-books-for-beginners-in-2021-2ed2311af46c)
+Aprender Rust:
+- [Libro de Rust](https://doc.rust-lang.org/book/)
+- [Los 9 mejores cursos y libros de programación en Rust para principiantes en 2024](https://medium.com/javarevisited/7-best-rust-programming-courses-and-books-for-beginners-in-2021-2ed2311af46c)
 
 <br>
 <br>
@@ -1373,5 +1379,5 @@ Learn Rust:
 
 
 <div align="center">
-    <img src="../images/thank_you_en.png" width="1100" alt="thank you">
+    <img src="../images/thankyou.png" width="900" alt="thank you">
 </div>
