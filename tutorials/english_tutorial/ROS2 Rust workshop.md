@@ -1359,6 +1359,7 @@ ROS2 Rust:
 
 Learn Rust:
 - [The Rust Book](https://doc.rust-lang.org/book/)
+- [The Rust Reference Book](https://doc.rust-lang.org/reference/)
 - [The 9 Best Rust Programming Courses and Books for Beginners in 2024](https://medium.com/javarevisited/7-best-rust-programming-courses-and-books-for-beginners-in-2021-2ed2311af46c)
 
 <br>
