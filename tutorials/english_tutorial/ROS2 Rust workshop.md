@@ -470,65 +470,66 @@ mv main.rs scan_subscriber.rs
 
 ```Rust
 use std::{
-   env,
-   f32::consts::PI,
-};
-use anyhow::{Error, Result};
-use sensor_msgs::msg::PointCloud2;
-use std::convert::TryInto;
-
-// Constants for obstacle detection
-const MAX_DISTANCE_THRESHOLD: f32 = 1.0;  // Maximum distance to detect obstacles
-const ANGLE_TOLERANCE: f32 = 0.1;         // Tolerance for angle detection
-
-fn main() -> Result<(), Error> {
-   // Initialize ROS2 context and create node
-   let context = rclrs::Context::new(env::args())?;
-   let node = rclrs::create_node(&context, "scan_subscriber_node")?;
-
-   // Create subscription to velodyne pointcloud topic
-   let _subscription = node.create_subscription::<PointCloud2, _>(
-       "velodyne_points",
-       rclrs::QOS_PROFILE_DEFAULT,
-       move |msg: PointCloud2| {
-           let point_step = msg.point_step as usize; // Bytes per point
-           
-           // Process each point in the cloud
-           for point in msg.data.chunks(point_step) {
-               // Extract x, y coordinates from point data
-               let x = f32::from_le_bytes(point[0..4].try_into().unwrap());
-               let y = f32::from_le_bytes(point[4..8].try_into().unwrap());
-           
-               // Calculate angle from x,y coordinates
-               let azimuth = y.atan2(x); // Angle in radians
-
-               // Check LEFT side obstacles
-               if y.abs() < MAX_DISTANCE_THRESHOLD && (azimuth < PI/2.0 + ANGLE_TOLERANCE) && (azimuth > PI/2.0 - ANGLE_TOLERANCE) {
-                   println!("Obstacle detected at LEFT: Orientation {:.2} [rad] and distance {:.2} [m] ", azimuth, y);
-                   break;
-               }
-               // Check RIGHT side obstacles
-               if y.abs() < MAX_DISTANCE_THRESHOLD && (azimuth < -PI/2.0 + ANGLE_TOLERANCE) && (azimuth > -PI/2.0 - ANGLE_TOLERANCE) { 
-                   println!("Obstacle detected at RIGHT: Orientation {:.2} [rad] and distance {:.2} [m] ", azimuth, y);
-                   break;
-               }
-               // Check FRONT obstacles
-               if x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < ANGLE_TOLERANCE {
-                   println!("Obstacle detected at x FRONT: orientation {:.2} [rad] and distance {:.2} [m]", azimuth, x);
-                   break;
-               }
-               // Check BACK obstacles
-               if x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < (PI + ANGLE_TOLERANCE) && (azimuth.abs() > PI - ANGLE_TOLERANCE) {
-                   println!("Obstacle detected at x BACK: orientation {:.2} [rad] and distance {:.2} [m]", azimuth, x);
-                   break;
-               }  
-           }
-       },
-   )?;
-
-   // Start ROS2 spin loop
-   rclrs::spin(node).map_err(|err| err.into())
-}
+    f32::consts::PI,
+ };
+ use anyhow::{Error, Result};
+ use sensor_msgs::msg::PointCloud2;
+ use std::convert::TryInto;
+ use rclrs::*;
+ 
+ // Constants for obstacle detection
+ const MAX_DISTANCE_THRESHOLD: f32 = 1.0;  // Maximum distance to detect obstacles
+ const ANGLE_TOLERANCE: f32 = 0.1;         // Tolerance for angle detection
+ 
+ fn main() -> Result<(), Error> {
+    // Initialize ROS2 context and create node
+    let context = Context::default_from_env()?;
+    let mut executor = context.create_basic_executor();
+    let node = executor.create_node("scan_subscriber_node")?;
+ 
+    // Create subscription to velodyne pointcloud topic
+    let _subscription = node.create_subscription::<PointCloud2, _>(
+        "velodyne_points",
+        rclrs::QOS_PROFILE_DEFAULT,
+        move |msg: PointCloud2| {
+            let point_step = msg.point_step as usize; // Bytes per point
+            
+            // Process each point in the cloud
+            for point in msg.data.chunks(point_step) {
+                // Extract x, y coordinates from point data
+                let x = f32::from_le_bytes(point[0..4].try_into().unwrap());
+                let y = f32::from_le_bytes(point[4..8].try_into().unwrap());
+            
+                // Calculate angle from x,y coordinates
+                let azimuth = y.atan2(x); // Angle in radians
+ 
+                // Check LEFT side obstacles
+                if y.abs() < MAX_DISTANCE_THRESHOLD && (azimuth < PI/2.0 + ANGLE_TOLERANCE) && (azimuth > PI/2.0 - ANGLE_TOLERANCE) {
+                    println!("Obstacle detected at LEFT: Orientation {:.2} [rad] and distance {:.2} [m] ", azimuth, y);
+                    break;
+                }
+                // Check RIGHT side obstacles
+                if y.abs() < MAX_DISTANCE_THRESHOLD && (azimuth < -PI/2.0 + ANGLE_TOLERANCE) && (azimuth > -PI/2.0 - ANGLE_TOLERANCE) { 
+                    println!("Obstacle detected at RIGHT: Orientation {:.2} [rad] and distance {:.2} [m] ", azimuth, y);
+                    break;
+                }
+                // Check FRONT obstacles
+                if x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < ANGLE_TOLERANCE {
+                    println!("Obstacle detected at x FRONT: orientation {:.2} [rad] and distance {:.2} [m]", azimuth, x);
+                    break;
+                }
+                // Check BACK obstacles
+                if x.abs() < MAX_DISTANCE_THRESHOLD && azimuth.abs() < (PI + ANGLE_TOLERANCE) && (azimuth.abs() > PI - ANGLE_TOLERANCE) {
+                    println!("Obstacle detected at x BACK: orientation {:.2} [rad] and distance {:.2} [m]", azimuth, x);
+                    break;
+                }  
+            }
+        },
+    )?;
+ 
+    // Start ROS2 spin loop
+    executor.spin(SpinOptions::default()).first_error().map_err(|err| err.into())
+ }
 
 ```
 3. Add ROS2 dependencies manually: Add **sensor_msgs** in the **package.xml** file.
@@ -624,9 +625,9 @@ Obstacle detected at RIGHT: Orientation -1.51 [rad] and distance -0.87 [m]
 
 IDE: `rust_apps/src/cmd_vel_publisher.rs`
 ```rust
-use std::env;
 use anyhow::{Error, Result};
 use geometry_msgs::msg::Twist as Twist;
+use rclrs::*;
 
 // Constants for velocity control
 const INITIAL_VELOCITY: f64 = 1.0;
@@ -635,9 +636,10 @@ const VELOCITY_THRESHOLD: f64 = 1.0;
 
 fn main() -> Result<(), Error> {
     // Initialize ROS2 context
-    let context = rclrs::Context::new(env::args())?;
+    let context = Context::default_from_env()?;
+    let executor = context.create_basic_executor();
     // Create publisher node
-    let node = rclrs::create_node(&context, "cmd_vel_publisher_node")?; 
+    let node = executor.create_node("cmd_vel_publisher_node")?;
     // Create Twist message publisher
     let publisher = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEFAULT)?;
     // Initialize Twist message and velocity
@@ -762,11 +764,12 @@ Code editor: `rust_apps/src/obstacle_avoidance.rs`
 
 ``` rust
 // Dependencies for ROS2, synchronization and geometry types
-use std::{env, sync::{Arc, Mutex}};
+use std::{sync::{Arc, Mutex}};
 use sensor_msgs::msg::PointCloud2 as PointCloud2;
 use geometry_msgs::msg::Twist as Twist;
 use anyhow::{Error, Result};
 use std::f32::consts::PI;
+use rclrs::*;
 
 // Configuration constants for robot movement and obstacle detection
 const ANGULAR_SPEED: f64 = 0.5;      // Turning speed in rad/s
@@ -783,7 +786,7 @@ struct ObstacleAvoidance {
 
 impl ObstacleAvoidance {
     // Constructor for ObstacleAvoidance system
-    pub fn new(node: &rclrs::Node) -> Result<Self, rclrs::RclrsError> {
+    pub fn new(node: Arc<rclrs::Node>) -> Result<Self, rclrs::RclrsError> {
         let twist_msg = Arc::new(Mutex::new(Twist::default()));
         let publication = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEFAULT)?;
         let twist_msg_clone = Arc::clone(&twist_msg);
@@ -863,13 +866,15 @@ impl ObstacleAvoidance {
 
 // Initialize ROS2 node and run obstacle avoidance loop
 fn main() -> Result<(), Error> {
-    let context = rclrs::Context::new(env::args())?;
-    let node = rclrs::create_node(&context, "obstacle_avoidance_node")?;
-    let subscriber_node_one = ObstacleAvoidance::new(&node)?;
+    // Initialize ROS2 context
+    let context = Context::default_from_env()?;
+    let mut executor = context.create_basic_executor();
+    let node = executor.create_node("obstacle_avoidance_node")?;
+    let subscriber_node_one = ObstacleAvoidance::new(node)?;
 
     while context.ok() {
         subscriber_node_one.publish();
-        let _ = rclrs::spin_once(node.clone(), Some(std::time::Duration::from_millis(10)));
+        let _ = executor.spin(SpinOptions::spin_once()).first_error();
         std::thread::sleep(std::time::Duration::from_millis(500));
     }
     Ok(())
@@ -1068,10 +1073,10 @@ touch cmd_service_server.rs
 2. Paste the following code in  `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_server.rs`
 
 ```rust
-use std::env;
 use anyhow::{Error, Result};
 use std::sync::Arc;
 use geometry_msgs::msg::{Twist, Vector3}; // Simplify imports for better clarity
+use rclrs::*;
 
 // Command constants for better readability and to avoid magic numbers
 const STOP: i32 = 0;
@@ -1142,10 +1147,12 @@ fn handle_service(
 
 fn main() -> Result<(), Error> {
     // Initialize the ROS2 context
-    let context = rclrs::Context::new(env::args())?;
+    let context = Context::default_from_env()?;
+    let mut executor = context.create_basic_executor();
+
 
     // Create a new ROS2 node
-    let node = rclrs::create_node(&context, "cmd_service_server")?;
+    let node = executor.create_node("cmd_service_server")?;
 
     // Create a publisher for the `cmd_vel` topic
     let cmd_vel_publisher = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEFAULT)?;
@@ -1159,7 +1166,7 @@ fn main() -> Result<(), Error> {
     println!("Starting server. Waiting for requests...");
 
     // Spin the node to process incoming service requests
-    rclrs::spin(node).map_err(|err| err.into())
+    executor.spin(SpinOptions::default()).first_error().map_err(|err| err.into())
 }
 ```
 
@@ -1231,15 +1238,17 @@ touch cmd_service_client_stop.rs
 ```
 2. Copy the following code inside `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_client_start.rs`
 ```rust
-use std::env;
-
 use anyhow::{Error, Result};
 const START: i32 = 1;
+use rclrs::*;
 
 fn main() -> Result<(), Error> {
-    let context = rclrs::Context::new(env::args())?;
+    // Initialize ROS2 context and create node
+    let context = Context::default_from_env()?;
 
-    let node = rclrs::create_node(&context, "cmd_service_client_stop")?;
+    let mut executor = context.create_basic_executor();
+
+    let node = executor.create_node("cmd_service_client_stop")?;
 
     let client = node.create_client::<rust_msgs::srv::Command>("command")?;
 
@@ -1264,21 +1273,24 @@ fn main() -> Result<(), Error> {
     std::thread::sleep(std::time::Duration::from_millis(500));
 
     println!("Waiting for response");
-    rclrs::spin(node).map_err(|err| err.into())
+    // Start ROS2 spin loop
+    executor.spin(SpinOptions::default()).first_error().map_err(|err| err.into())
 }
 ```
 
 3. Copy the following code inside `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_client_stop.rs`
 ```rust
-use std::env;
-
 use anyhow::{Error, Result};
 const STOP: i32 = 0;
+use rclrs::*;
 
 fn main() -> Result<(), Error> {
-    let context = rclrs::Context::new(env::args())?;
+    // Initialize ROS2 context and create node
+    let context = Context::default_from_env()?;
 
-    let node = rclrs::create_node(&context, "cmd_service_client_stop")?;
+    let mut executor = context.create_basic_executor();
+
+    let node = executor.create_node("cmd_service_client_stop")?;
 
     let client = node.create_client::<rust_msgs::srv::Command>("command")?;
 
@@ -1303,7 +1315,8 @@ fn main() -> Result<(), Error> {
     std::thread::sleep(std::time::Duration::from_millis(500));
 
     println!("Waiting for response");
-    rclrs::spin(node).map_err(|err| err.into())
+    // Start ROS2 spin loop
+    executor.spin(SpinOptions::default()).first_error().map_err(|err| err.into())
 }
 ```
 4. Add a two new executable in `~/ros2_rust_workshop/ros_ws/src/rust_apps/Cargo.toml`
@@ -1359,6 +1372,7 @@ ROS2 Rust:
 
 Learn Rust:
 - [The Rust Book](https://doc.rust-lang.org/book/)
+- [The Rust Reference Book](https://doc.rust-lang.org/reference/)
 - [The 9 Best Rust Programming Courses and Books for Beginners in 2024](https://medium.com/javarevisited/7-best-rust-programming-courses-and-books-for-beginners-in-2021-2ed2311af46c)
 
 <br>

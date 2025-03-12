@@ -1365,6 +1365,7 @@ ROS2 Rust:
 
 Aprender Rust:
 - [Libro de Rust](https://doc.rust-lang.org/book/)
+- [Libro de Referencias de Rust](https://doc.rust-lang.org/reference/)
 - [Los 9 mejores cursos y libros de programación en Rust para principiantes en 2024](https://medium.com/javarevisited/7-best-rust-programming-courses-and-books-for-beginners-in-2021-2ed2311af46c)
 
 <br>
