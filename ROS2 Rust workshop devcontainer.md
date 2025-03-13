@@ -23,7 +23,7 @@ Next time you open the project, you can just click on 'Open in DevContainer' and
 Build the workspace, about 3min30s in my moderate machine.
 
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 sudo apt-get update
 rosdep update
 rosdep install --from-paths src --ignore-src -r -y

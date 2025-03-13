@@ -233,20 +233,20 @@ let mut message = std_msgs::msg::String::default();
 ##### 4.2.3.1 Create the context, shared state between nodes and similar entities.
 
 ```rust
-let context = rclrs::Context::new(env::args())?;
+let context = Context::default_from_env()?;
+let mut executor = context.create_basic_executor();
 ```
 
 ##### 4.2.3.2 Create the node.
 
 ```rust
 pub fn create_node(
-    context: &Context,
     node_name: &str
 ) -> Result<Arc<Node>, RclrsError>
 ```
 
 ```rust
-let node = rclrs::create_node(&context, "<node_name>")?;
+let node = executor.create_node("<node_name>")?;
 ```
 
 ##### 4.2.3.3 Create a subscriber.
@@ -266,8 +266,8 @@ where
 let _subscription = node.create_subscription::<PointCloud2, _>(
     "velodyne_points",
     rclrs::QOS_PROFILE_DEFAULT,
-    move |msg: sensor_msgs::msg::LaserScan| {
-        let point_step = msg.point_step as usize; 
+    move |msg: PointCloud2| {
+        let point_step = msg.point_step as usize; // Bytes per point
         println!("Bytes per point: '{}'", point_step);
     },
 )?;
@@ -290,7 +290,40 @@ let publisher = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEF
 publisher.publish(&cmd_vel_message)?;
 ```
 
-##### 4.2.3.5 Which QoSProfile (Quality of Service Profile) does Rust offers?
+##### 4.2.3.5 Create a Service Server.
+
+```rust
+pub fn create_service<T, F>(
+    &self,
+    topic: &str,
+    callback: F,
+) -> Result<Arc<Service<T>>, RclrsError>
+where
+    T: Service,
+    F: Fn(&rmw_request_id_t, T::Request) -> T::Response + 'static + Send,
+```
+
+```rust
+let _server = node.create_service::<rust_msgs::srv::Command, _>("command", move |req_header, request| {
+    handle_service(req_header, request, cmd_vel_publisher.clone())
+    })?;
+```
+
+
+##### 4.2.3.6 Create a Service Client.
+```rust
+pub fn create_client<T>(
+    &self,
+    topic: &str,
+) -> Result<Arc<Client<T>>, RclrsError>
+where
+    T: Service,
+```
+```rust
+let client = node.create_client::<rust_msgs::srv::Command>("command")?;
+```
+
+##### 4.2.3.7 Which QoSProfile (Quality of Service Profile) does Rust offers?
 
 - QOS_PROFILE_CLOCK
 - QOS_PROFILE_DEFAULT
@@ -302,27 +335,25 @@ publisher.publish(&cmd_vel_message)?;
 
 Since the topic of QoS (Quality of Service) is complex and outside the scope of the current learning session, we'll use the default QoS profile, QOS_PROFILE_DEFAULT. If you want to learn more about QoS and how to customize it for your specific needs, I recommend checking the official ROS2 page [QoS](https://docs.ros.org/en/rolling/Concepts/Intermediate/About-Quality-of-Service-Settings.html).
 
-##### 4.2.3.6 ROS spin - use outside a loop.
+##### 4.2.3.8 ROS spin - use outside a loop.
 
 ```rust
-pub fn spin(node: Arc<Node>) -> Result<(), RclrsError>
+pub fn spin(&self) -> Result<(), RclrsError>
 ```
 
 ```rust
 rclrs::spin(node).map_err(|err| err.into())
 ```
 
-##### 4.2.3.7 ROS spin_once - use inside a loop.
+##### 4.2.3.9 ROS spin_once - use inside a loop.
 
 ```rust
-pub fn spin_once(
-    node: Arc<Node>,
-    timeout: Option<Duration>
-) -> Result<(), RclrsError>
+pub fn spin_once(&self, timeout: Option<Duration>) -> Result<(), RclrsError>
+
 ```
 
 ```rust
-rclrs::spin_once(node.clone(), Some(std::time::Duration::from_millis(500)));
+let _ = executor.spin(SpinOptions::spin_once()).first_error();
 ```
 
 #### 4.2.4 Creating and Using Structures and Methods
