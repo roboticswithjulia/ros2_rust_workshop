@@ -788,12 +788,11 @@ Code editor: `rust_apps/src/obstacle_avoidance.rs`
 
 ``` rust
 // Dependencies for ROS2, synchronization and geometry types
-use std::{sync::{Arc, Mutex}};
+use std::{env, sync::{Arc, Mutex}};
 use sensor_msgs::msg::PointCloud2 as PointCloud2;
 use geometry_msgs::msg::Twist as Twist;
 use anyhow::{Error, Result};
 use std::f32::consts::PI;
-use rclrs::*;
 
 // Configuration constants for robot movement and obstacle detection
 const ANGULAR_SPEED: f64 = 0.5;      // Turning speed in rad/s
@@ -810,7 +809,7 @@ struct ObstacleAvoidance {
 
 impl ObstacleAvoidance {
     // Constructor for ObstacleAvoidance system
-    pub fn new(node: Arc<rclrs::Node>) -> Result<Self, rclrs::RclrsError> {
+    pub fn new(node: &rclrs::Node) -> Result<Self, rclrs::RclrsError> {
         let twist_msg = Arc::new(Mutex::new(Twist::default()));
         let publication = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEFAULT)?;
         let twist_msg_clone = Arc::clone(&twist_msg);
@@ -890,15 +889,13 @@ impl ObstacleAvoidance {
 
 // Initialize ROS2 node and run obstacle avoidance loop
 fn main() -> Result<(), Error> {
-    // Initialize ROS2 context
-    let context = Context::default_from_env()?;
-    let mut executor = context.create_basic_executor();
-    let node = executor.create_node("obstacle_avoidance_node")?;
-    let subscriber_node_one = ObstacleAvoidance::new(node)?;
+    let context = rclrs::Context::new(env::args())?;
+    let node = rclrs::create_node(&context, "obstacle_avoidance_node")?;
+    let subscriber_node_one = ObstacleAvoidance::new(&node)?;
 
     while context.ok() {
         subscriber_node_one.publish();
-        let _ = executor.spin(SpinOptions::spin_once()).first_error();
+        let _ = rclrs::spin_once(node.clone(), Some(std::time::Duration::from_millis(10)));
         std::thread::sleep(std::time::Duration::from_millis(500));
     }
     Ok(())
