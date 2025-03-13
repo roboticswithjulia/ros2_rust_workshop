@@ -63,7 +63,7 @@ RUN vcs import /home/${CONTAINER_USER}/ros_ws/src < /home/${CONTAINER_USER}/ros_
 RUN chown -R ${CONTAINER_USER}:${CONTAINER_USER} /home/${CONTAINER_USER}/ros_ws
 USER $CONTAINER_USER
 WORKDIR /home/${CONTAINER_USER}
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain 1.75.0 -y
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain 1.81.0 -y
 ENV PATH="/home/${CONTAINER_USER}/.cargo/bin:$PATH"
 RUN cargo install cargo-ament-build
 

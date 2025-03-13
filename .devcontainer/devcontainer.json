@@ -5,7 +5,7 @@
       "context": "..",
       "dockerfile": "../Dockerfile",
       "args": {
-        "PROJECT_FOLDER": "/home/cuser/ros2_ws/src/ros2_rust_workshop",
+        "PROJECT_FOLDER": "/home/cuser/ros_ws/src/ros2_rust_workshop",
         "USERNAME": "cuser",
         "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}"
       }
@@ -20,9 +20,9 @@
       "QT_X11_NO_MITSHM": "1",
       "TERM": "xterm-256color"
     },
-    "workspaceFolder": "/home/cuser/ros2_ws",
+    "workspaceFolder": "/home/cuser/ros_ws",
     "mounts": [
-      "source=${localWorkspaceFolder},target=/home/cuser/ros2_ws/src/ros2_rust_workshop,type=bind", // Workspace folder
+      "source=${localWorkspaceFolder},target=/home/cuser/ros_ws/src/ros2_rust_workshop,type=bind", // Workspace folder
       "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached" // X11 socket
     ],
     "remoteUser": "cuser",
