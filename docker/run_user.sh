@@ -8,7 +8,7 @@ docker run -it --privileged \
     --group-add sudo \
     --env="DISPLAY" \
     --env="QT_X11_NO_MITSHM=1" \
-    --workdir="/home/${container_user}/ros2_rust_workshop/" \
+    --workdir="/home/${container_user}" \
     --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
     --net=host \
     --cap-add=sys_nice \

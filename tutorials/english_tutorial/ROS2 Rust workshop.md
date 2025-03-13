@@ -48,7 +48,7 @@ https://github.com/ros2-rust/ros2_rust.
    >The simulation may take time to load on first launch. Wait for it to open completely, then press `Ctrl+C` to close it.
 
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 source /opt/ros/humble/setup.bash 
 colcon build
 . install/setup.sh
@@ -67,7 +67,7 @@ ros2 launch go2_config gazebo_velodyne.launch.py world:=$(ros2 pkg prefix go2_co
 1. See what *topics* are available. Open a terminal, `terminal #2` and run:
 
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 source /opt/ros/humble/setup.sh 
 . install/setup.sh 
 ros2 topic list
@@ -136,7 +136,7 @@ $ cargo new <pkg_name>
 
 Execute in `terminal #2`:
 ```bash
-cd ~/ros2_rust_workshop/ros_ws/src
+cd ~/ros_ws/src
 cargo new rust_apps
 ```
 
@@ -154,7 +154,7 @@ These are essential, so remember the following:
 
 Execute in  `Terminal #2`:
 ```bash
-cd ~/ros2_rust_workshop/ros_ws/src/rust_apps
+cd ~/ros_ws/src/rust_apps
 tree -c
 ```
 
@@ -170,7 +170,7 @@ tree -c
 
 For ROS to recognize that this is a ROS package, it's necessary to add a **package.xml** file. This file contains metadata information about the package, such as its name, version, author, and necessary dependencies.
 
-1. Create a new a **package.xml** file inside the _rust_apps_ directory `~/ros2_rust_workshop/ros_ws/src/rust_apps/package.xml`.
+1. Create a new a **package.xml** file inside the _rust_apps_ directory `~/ros_ws/src/rust_apps/package.xml`.
 
 2. Copy the following code inside `rust_apps/package.xml`.
 ```xml
@@ -201,7 +201,7 @@ For large projects, you might not want to compile all packages immediately. Inst
 
 Execute in `Terminal #2`:
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 colcon build --packages-select rust_apps
 source install/setup.sh
 ```
@@ -240,7 +240,6 @@ let context = rclrs::Context::new(env::args())?;
 
 ```rust
 pub fn create_node(
-    context: &Context,
     node_name: &str
 ) -> Result<Arc<Node>, RclrsError>
 ```
@@ -266,8 +265,8 @@ where
 let _subscription = node.create_subscription::<PointCloud2, _>(
     "velodyne_points",
     rclrs::QOS_PROFILE_DEFAULT,
-    move |msg: sensor_msgs::msg::LaserScan| {
-        let point_step = msg.point_step as usize; 
+    move |msg: PointCloud2| {
+        let point_step = msg.point_step as usize; // Bytes per point
         println!("Bytes per point: '{}'", point_step);
     },
 )?;
@@ -290,7 +289,40 @@ let publisher = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEF
 publisher.publish(&cmd_vel_message)?;
 ```
 
-##### 4.2.3.5 Which QoSProfile (Quality of Service Profile) does Rust offers?
+##### 4.2.3.5 Create a Service Server.
+
+```rust
+pub fn create_service<T, F>(
+    &self,
+    topic: &str,
+    callback: F,
+) -> Result<Arc<Service<T>>, RclrsError>
+where
+    T: Service,
+    F: Fn(&rmw_request_id_t, T::Request) -> T::Response + 'static + Send,
+```
+
+```rust
+let _server = node.create_service::<rust_msgs::srv::Command, _>("command", move |req_header, request| {
+    handle_service(req_header, request, cmd_vel_publisher.clone())
+    })?;
+```
+
+
+##### 4.2.3.6 Create a Service Client.
+```rust
+pub fn create_client<T>(
+    &self,
+    topic: &str,
+) -> Result<Arc<Client<T>>, RclrsError>
+where
+    T: Service,
+```
+```rust
+let client = node.create_client::<rust_msgs::srv::Command>("command")?;
+```
+
+##### 4.2.3.7 Which QoSProfile (Quality of Service Profile) does Rust offers?
 
 - QOS_PROFILE_CLOCK
 - QOS_PROFILE_DEFAULT
@@ -302,23 +334,24 @@ publisher.publish(&cmd_vel_message)?;
 
 Since the topic of QoS (Quality of Service) is complex and outside the scope of the current learning session, we'll use the default QoS profile, QOS_PROFILE_DEFAULT. If you want to learn more about QoS and how to customize it for your specific needs, I recommend checking the official ROS2 page [QoS](https://docs.ros.org/en/rolling/Concepts/Intermediate/About-Quality-of-Service-Settings.html).
 
-##### 4.2.3.6 ROS spin - use outside a loop.
+##### 4.2.3.8 ROS spin - use outside a loop.
 
 ```rust
-pub fn spin(node: Arc<Node>) -> Result<(), RclrsError>
+pub fn spin(&self) -> Result<(), RclrsError>
 ```
 
 ```rust
 rclrs::spin(node).map_err(|err| err.into())
 ```
 
-##### 4.2.3.7 ROS spin_once - use inside a loop.
+##### 4.2.3.9 ROS spin_once - use inside a loop.
 
 ```rust
 pub fn spin_once(
     node: Arc<Node>,
     timeout: Option<Duration>
 ) -> Result<(), RclrsError>
+
 ```
 
 ```rust
@@ -338,7 +371,6 @@ impl Rectangle {
         self.width * self.height
     }
 }
-
 ```
 
 ### <a name="howtocreateasubscribertoscantopicinrust"></a> 4.3 How to Create a Subscriber
@@ -461,7 +493,7 @@ bool is_dense        # True if there are no invalid points
 
 Execute in `Terminal #2`:
 ```bash
-cd ~/ros2_rust_workshop/ros_ws/src/rust_apps/src
+cd ~/ros_ws/src/rust_apps/src
 mv main.rs scan_subscriber.rs
 ```
 
@@ -470,12 +502,12 @@ mv main.rs scan_subscriber.rs
 
 ```Rust
 use std::{
+    env,
     f32::consts::PI,
  };
  use anyhow::{Error, Result};
  use sensor_msgs::msg::PointCloud2;
  use std::convert::TryInto;
- use rclrs::*;
  
  // Constants for obstacle detection
  const MAX_DISTANCE_THRESHOLD: f32 = 1.0;  // Maximum distance to detect obstacles
@@ -483,9 +515,8 @@ use std::{
  
  fn main() -> Result<(), Error> {
     // Initialize ROS2 context and create node
-    let context = Context::default_from_env()?;
-    let mut executor = context.create_basic_executor();
-    let node = executor.create_node("scan_subscriber_node")?;
+    let context = rclrs::Context::new(env::args())?;
+    let node = rclrs::create_node(&context, "scan_subscriber_node")?;
  
     // Create subscription to velodyne pointcloud topic
     let _subscription = node.create_subscription::<PointCloud2, _>(
@@ -528,7 +559,7 @@ use std::{
     )?;
  
     // Start ROS2 spin loop
-    executor.spin(SpinOptions::default()).first_error().map_err(|err| err.into())
+    rclrs::spin(node).map_err(|err| err.into())
  }
 
 ```
@@ -561,7 +592,7 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies.sensor_msgs]
+[dependencies]
 sensor_msgs = "*"
 
 [[bin]]
@@ -573,7 +604,7 @@ path = "src/scan_subscriber.rs"
 
 Execute in `Terminal #2`:
 ```bash
-cd ~/ros2_rust_workshop/ros_ws/src/rust_apps
+cd ~/ros_ws/src/rust_apps
 cargo add anyhow
 cargo add rclrs
 ```
@@ -582,7 +613,7 @@ cargo add rclrs
 
 Execute in `Terminal #2`:
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 colcon build --packages-select rust_apps
 ```
 
@@ -590,7 +621,7 @@ colcon build --packages-select rust_apps
 
 Execute in Terminal #2:
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 source install/setup.sh
 ros2 run rust_apps scan_subscriber_node
 ```
@@ -625,9 +656,9 @@ Obstacle detected at RIGHT: Orientation -1.51 [rad] and distance -0.87 [m]
 
 IDE: `rust_apps/src/cmd_vel_publisher.rs`
 ```rust
+use std::env;
 use anyhow::{Error, Result};
 use geometry_msgs::msg::Twist as Twist;
-use rclrs::*;
 
 // Constants for velocity control
 const INITIAL_VELOCITY: f64 = 1.0;
@@ -636,10 +667,9 @@ const VELOCITY_THRESHOLD: f64 = 1.0;
 
 fn main() -> Result<(), Error> {
     // Initialize ROS2 context
-    let context = Context::default_from_env()?;
-    let executor = context.create_basic_executor();
+    let context = rclrs::Context::new(env::args())?;
     // Create publisher node
-    let node = executor.create_node("cmd_vel_publisher_node")?;
+    let node = rclrs::create_node(&context, "cmd_vel_publisher_node")?; 
     // Create Twist message publisher
     let publisher = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEFAULT)?;
     // Initialize Twist message and velocity
@@ -679,15 +709,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.95"
+anyhow = "1.0.97"
 rclrs = "0.4.1"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies.sensor_msgs]
 sensor_msgs = "*"
-
-[dependencies.geometry_msgs]
 geometry_msgs = "*"
 
 [[bin]]
@@ -723,7 +747,7 @@ Editor: `rust_apps/package.xml`
 
 Execute in `Terminal #2`:
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 colcon build --packages-select rust_apps
 ```
 
@@ -731,7 +755,7 @@ colcon build --packages-select rust_apps
 
 Execute in `Terminal #2`:
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 source install/setup.sh
 ```
 4. Open the gazebo window and look through the robot go2 and execute the node `cmd_vel_publisher`.
@@ -764,12 +788,11 @@ Code editor: `rust_apps/src/obstacle_avoidance.rs`
 
 ``` rust
 // Dependencies for ROS2, synchronization and geometry types
-use std::{sync::{Arc, Mutex}};
+use std::{env, sync::{Arc, Mutex}};
 use sensor_msgs::msg::PointCloud2 as PointCloud2;
 use geometry_msgs::msg::Twist as Twist;
 use anyhow::{Error, Result};
 use std::f32::consts::PI;
-use rclrs::*;
 
 // Configuration constants for robot movement and obstacle detection
 const ANGULAR_SPEED: f64 = 0.5;      // Turning speed in rad/s
@@ -786,7 +809,7 @@ struct ObstacleAvoidance {
 
 impl ObstacleAvoidance {
     // Constructor for ObstacleAvoidance system
-    pub fn new(node: Arc<rclrs::Node>) -> Result<Self, rclrs::RclrsError> {
+    pub fn new(node: &rclrs::Node) -> Result<Self, rclrs::RclrsError> {
         let twist_msg = Arc::new(Mutex::new(Twist::default()));
         let publication = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEFAULT)?;
         let twist_msg_clone = Arc::clone(&twist_msg);
@@ -866,15 +889,13 @@ impl ObstacleAvoidance {
 
 // Initialize ROS2 node and run obstacle avoidance loop
 fn main() -> Result<(), Error> {
-    // Initialize ROS2 context
-    let context = Context::default_from_env()?;
-    let mut executor = context.create_basic_executor();
-    let node = executor.create_node("obstacle_avoidance_node")?;
-    let subscriber_node_one = ObstacleAvoidance::new(node)?;
+    let context = rclrs::Context::new(env::args())?;
+    let node = rclrs::create_node(&context, "obstacle_avoidance_node")?;
+    let subscriber_node_one = ObstacleAvoidance::new(&node)?;
 
     while context.ok() {
         subscriber_node_one.publish();
-        let _ = executor.spin(SpinOptions::spin_once()).first_error();
+        let _ = rclrs::spin_once(node.clone(), Some(std::time::Duration::from_millis(10)));
         std::thread::sleep(std::time::Duration::from_millis(500));
     }
     Ok(())
@@ -889,15 +910,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.95"
+anyhow = "1.0.97"
 rclrs = "0.4.1"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies.sensor_msgs]
 sensor_msgs = "*"
-
-[dependencies.geometry_msgs]
 geometry_msgs = "*"
 
 [[bin]]
@@ -915,7 +930,7 @@ path = "src/obstacle_avoidance.rs"
 Execute in `Terminal #2`:
 
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 colcon build --packages-select rust_apps
 ```
 
@@ -946,25 +961,25 @@ ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0
 
 1. Create a new crate named `rust_msgs`
 ```bash
-cd ~/ros2_rust_workshop/ros_ws/src
+cd ~/ros_ws/src
 cargo new rust_msgs
 ```
 
 2. Delete the file `Cargo.toml`
 ```bash
-cd ~/ros2_rust_workshop/ros_ws/src/rust_msgs
+cd ~/ros_ws/src/rust_msgs
 rm -r Cargo.toml
 ```
 
 3. Create a `srv` folder and a `Command.srv` file
 
 ```bash
-cd ~/ros2_rust_workshop/ros_ws/src/rust_msgs
+cd ~/ros_ws/src/rust_msgs
 mkdir srv
 cd srv
 touch Command.srv
 ```
-4. Copy the following message inside `~/ros2_rust_workshop/ros_ws/src/rust_msgs/Command.srv`
+4. Copy the following message inside `~/ros_ws/src/rust_msgs/Command.srv`
 
 ```txt
 # Command
@@ -978,7 +993,7 @@ int32 command
 bool success
 string message
 ```
-5. Create a `CMakeLists.txt` file inside `~/ros2_rust_workshop/ros_ws/src/rust_msgs` and copy the following code:
+5. Create a `CMakeLists.txt` file inside `~/ros_ws/src/rust_msgs` and copy the following code:
 
 ```cmake
 cmake_minimum_required(VERSION 3.5)
@@ -1008,7 +1023,7 @@ ament_export_dependencies(rosidl_default_runtime)
 
 ament_package()
 ```
-6. Create a `package.xml` inside  `~/ros2_rust_workshop/ros_ws/src/rust_msgs` and add `ament`, `rosidl_default_generators`, `rosidl_default_runtime` and `rosidl_interface_packages` dependencies respectively:
+6. Create a `package.xml` inside  `~/ros_ws/src/rust_msgs` and add `ament`, `rosidl_default_generators`, `rosidl_default_runtime` and `rosidl_interface_packages` dependencies respectively:
 ```xml
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
@@ -1036,7 +1051,7 @@ ament_package()
 5. Build and source:
 
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 colcon build --packages-select rust_msgs
 source install/setup.sh
 ```
@@ -1063,20 +1078,20 @@ string message
 
 #### 4.7.1 How to create a Service Server:
 
-1. Create a file in  `~/ros2_rust_workshop/ros_ws/src/rust_apps/src` called `cmd_service_server.rs`:
+1. Create a file in  `~/ros_ws/src/rust_apps/src` called `cmd_service_server.rs`:
 
 ```bash
-cd ~/ros2_rust_workshop/ros_ws/src/rust_apps/src
+cd ~/ros_ws/src/rust_apps/src
 touch cmd_service_server.rs
 ```
 
-2. Paste the following code in  `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_server.rs`
+2. Paste the following code in  `~/ros_ws/src/rust_apps/src/cmd_service_server.rs`
 
 ```rust
+use std::env;
 use anyhow::{Error, Result};
 use std::sync::Arc;
 use geometry_msgs::msg::{Twist, Vector3}; // Simplify imports for better clarity
-use rclrs::*;
 
 // Command constants for better readability and to avoid magic numbers
 const STOP: i32 = 0;
@@ -1147,12 +1162,10 @@ fn handle_service(
 
 fn main() -> Result<(), Error> {
     // Initialize the ROS2 context
-    let context = Context::default_from_env()?;
-    let mut executor = context.create_basic_executor();
-
+    let context = rclrs::Context::new(env::args())?;
 
     // Create a new ROS2 node
-    let node = executor.create_node("cmd_service_server")?;
+    let node = rclrs::create_node(&context, "cmd_service_server")?;
 
     // Create a publisher for the `cmd_vel` topic
     let cmd_vel_publisher = node.create_publisher::<Twist>("cmd_vel", rclrs::QOS_PROFILE_DEFAULT)?;
@@ -1166,15 +1179,15 @@ fn main() -> Result<(), Error> {
     println!("Starting server. Waiting for requests...");
 
     // Spin the node to process incoming service requests
-    executor.spin(SpinOptions::default()).first_error().map_err(|err| err.into())
+    rclrs::spin(node).map_err(|err| err.into())
 }
 ```
 
-3. Add a new executable in `~/ros2_rust_workshop/ros_ws/src/rust_apps/Cargo.toml`
+3. Add a new executable in `~/ros_ws/src/rust_apps/Cargo.toml`
 
 ```toml
+[dependencies]
 (...)
-[dependencies.rust_msgs]
 rust_msgs = "*"
 
 (...)
@@ -1185,7 +1198,7 @@ path = "src/cmd_service_server.rs"
 4. Using the `terminal #2` Compile latest changes and execute the server:
 
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 colcon build --packages-select rust_apps
 source install/setup.bash
 ros2 run rust_apps cmd_service_server
@@ -1196,7 +1209,7 @@ ros2 run rust_apps cmd_service_server
 5.1 GO2 robot will start moving after sending the following command request:
 
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 source install/setup.sh
 ros2 service call /command rust_msgs/srv/Command "{command: 1}"
 ```
@@ -1228,27 +1241,25 @@ Write `CTRL+C` in `terminal #2`
 
 #### 4.7.2 How to create a Service Client:
 
-1. Create two different files inside `~/ros2_rust_workshop/ros_ws/src/rust_apps/src`
+1. Create two different files inside `~/ros_ws/src/rust_apps/src`
 
 ```bash
-cd ~/ros2_rust_workshop/ros_ws/src/rust_apps/src
+cd ~/ros_ws/src/rust_apps/src
 touch cmd_service_client_start.rs
 touch cmd_service_client_stop.rs
 
 ```
-2. Copy the following code inside `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_client_start.rs`
+2. Copy the following code inside `~/ros_ws/src/rust_apps/src/cmd_service_client_start.rs`
 ```rust
+use std::env;
+
 use anyhow::{Error, Result};
 const START: i32 = 1;
-use rclrs::*;
 
 fn main() -> Result<(), Error> {
-    // Initialize ROS2 context and create node
-    let context = Context::default_from_env()?;
+    let context = rclrs::Context::new(env::args())?;
 
-    let mut executor = context.create_basic_executor();
-
-    let node = executor.create_node("cmd_service_client_stop")?;
+    let node = rclrs::create_node(&context, "cmd_service_client_stop")?;
 
     let client = node.create_client::<rust_msgs::srv::Command>("command")?;
 
@@ -1273,24 +1284,21 @@ fn main() -> Result<(), Error> {
     std::thread::sleep(std::time::Duration::from_millis(500));
 
     println!("Waiting for response");
-    // Start ROS2 spin loop
-    executor.spin(SpinOptions::default()).first_error().map_err(|err| err.into())
+    rclrs::spin(node).map_err(|err| err.into())
 }
 ```
 
-3. Copy the following code inside `~/ros2_rust_workshop/ros_ws/src/rust_apps/src/cmd_service_client_stop.rs`
+3. Copy the following code inside `~/ros_ws/src/rust_apps/src/cmd_service_client_stop.rs`
 ```rust
+use std::env;
+
 use anyhow::{Error, Result};
 const STOP: i32 = 0;
-use rclrs::*;
 
 fn main() -> Result<(), Error> {
-    // Initialize ROS2 context and create node
-    let context = Context::default_from_env()?;
+    let context = rclrs::Context::new(env::args())?;
 
-    let mut executor = context.create_basic_executor();
-
-    let node = executor.create_node("cmd_service_client_stop")?;
+    let node = rclrs::create_node(&context, "cmd_service_client_stop")?;
 
     let client = node.create_client::<rust_msgs::srv::Command>("command")?;
 
@@ -1315,11 +1323,10 @@ fn main() -> Result<(), Error> {
     std::thread::sleep(std::time::Duration::from_millis(500));
 
     println!("Waiting for response");
-    // Start ROS2 spin loop
-    executor.spin(SpinOptions::default()).first_error().map_err(|err| err.into())
+    rclrs::spin(node).map_err(|err| err.into())
 }
 ```
-4. Add a two new executable in `~/ros2_rust_workshop/ros_ws/src/rust_apps/Cargo.toml`
+4. Add a two new executable in `~/ros_ws/src/rust_apps/Cargo.toml`
 
 ```toml
 (...)
@@ -1334,14 +1341,14 @@ path = "src/cmd_service_client_stop.rs"
 ```
 5. Using the `terminal #2` execute the server:
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 colcon build --packages-select rust_apps
 source install/setup.bash
 ros2 run rust_apps cmd_service_server
 ```
 6. Using the `terminal #3` compile latest changes and execute the first client:
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 source install/setup.bash
 ros2 run rust_apps cmd_service_client_start
 ```
@@ -1350,7 +1357,7 @@ Go2 robot should start walking.
 
 7. Using the `terminal #4` compile latest changes and execute the second client:
 ```bash
-cd ~/ros2_rust_workshop/ros_ws
+cd ~/ros_ws
 source install/setup.bash
 ros2 run rust_apps cmd_service_client_stop
 ```
