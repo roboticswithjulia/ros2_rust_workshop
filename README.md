@@ -3,6 +3,7 @@
 
 - Tutorial in **English** can be found [here](./tutorials/english_tutorial/ROS2%20Rust%20workshop.md).
 - Tutorial in **Spanish** can be found [here](./tutorials/spanish_tutorial/ROS2%20Rust%20workshop.md).
+- Le tutoriel en **français** est disponible [ici](./tutorials/spanish_tutorial/ROS2%20Rust%20workshop.md).
 
 <div align="center">
     <img src="./tutorials/videos/obstacle_avoidance.gif" width="800" alt="obstacle avoidance">
