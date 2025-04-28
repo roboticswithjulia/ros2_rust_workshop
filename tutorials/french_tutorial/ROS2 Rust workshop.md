@@ -51,7 +51,7 @@ https://github.com/ros2-rust/ros2_rust.
 cd ~/ros_ws
 source /opt/ros/humble/setup.bash 
 colcon build
-. install/setup.sh
+source install/setup.bash
 ros2 launch go2_config gazebo_velodyne.launch.py world:=$(ros2 pkg prefix go2_config)/share/go2_config/worlds/outdoor.world
 ```
 
@@ -64,12 +64,12 @@ ros2 launch go2_config gazebo_velodyne.launch.py world:=$(ros2 pkg prefix go2_co
 </div>
 
 
-1. Listez les *topics* disponibles dans le `terminal #2`:
+2. Listez les *topics* disponibles dans le `terminal #2`:
 
 ```bash
 cd ~/ros_ws
 source /opt/ros/humble/setup.sh 
-. install/setup.sh 
+source install/setup.bash
 ros2 topic list
 ```
 Sortie du `terminal #2` :
@@ -775,8 +775,9 @@ source install/setup.sh
 1. Ouvrez gazebo, regardez au travers du robot go2 et executer le nœud `cmd_vel_publisher`.
 
 Dans `terminal #2`:
-```
+```bash
 source /opt/ros/humble/setup.sh 
+source install/setup.bash
 ros2 run rust_apps cmd_vel_publisher_node
 ```
 
@@ -955,6 +956,7 @@ colcon build --packages-select rust_apps
 
 ```bash
 source install/setup.sh
+source install/setup.bash
 ros2 run rust_apps obstacle_avoidance_node
 ```
 
