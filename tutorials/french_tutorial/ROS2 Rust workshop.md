@@ -246,6 +246,7 @@ let context = rclrs::Context::new(env::args())?;
 
 ```rust
 pub fn create_node(
+    context: &Context,
     node_name: &str
 ) -> Result<Arc<Node>, RclrsError>
 ```
@@ -955,7 +956,6 @@ colcon build --packages-select rust_apps
 #### 4.5.2 Compilez le package :
 
 ```bash
-source install/setup.sh
 source install/setup.bash
 ros2 run rust_apps obstacle_avoidance_node
 ```
@@ -1371,14 +1371,13 @@ path = "src/cmd_service_client_stop.rs"
 
 Lancer le **serveur** dans un terminal :
 ```bash
+cd ~/ros_ws
+colcon build --packages-select rust_apps
+source install/setup.bash
 ros2 run rust_apps cmd_service_server
 ```
 Lancer un **client START** dans un autre :
 ```bash
-cd ~/ros_ws
-source install/setup.bash
-cd ~/ros_ws
-source install/setup.bash
 cd ~/ros_ws
 source install/setup.bash
 ros2 run rust_apps cmd_service_client_start
@@ -1386,6 +1385,8 @@ ros2 run rust_apps cmd_service_client_start
 
 Lancer un **client STOP** dans un autre :
 ```bash
+cd ~/ros_ws
+source install/setup.bash
 ros2 run rust_apps cmd_service_client_stop
 ```
 
