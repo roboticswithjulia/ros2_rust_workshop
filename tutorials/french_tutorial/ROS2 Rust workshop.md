@@ -1379,6 +1379,8 @@ cd ~/ros_ws
 source install/setup.bash
 cd ~/ros_ws
 source install/setup.bash
+cd ~/ros_ws
+source install/setup.bash
 ros2 run rust_apps cmd_service_client_start
 ```
 
