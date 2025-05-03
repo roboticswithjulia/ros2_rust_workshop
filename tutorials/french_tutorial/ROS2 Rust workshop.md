@@ -1375,6 +1375,8 @@ ros2 run rust_apps cmd_service_server
 ```
 Lancer un **client START** dans un autre :
 ```bash
+cd ~/ros_ws
+source install/setup.bash
 ros2 run rust_apps cmd_service_client_start
 ```
 
